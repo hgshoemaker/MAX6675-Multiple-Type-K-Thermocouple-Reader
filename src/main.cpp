@@ -31,6 +31,7 @@ MAX6675 thermocouple4(thermoCLK, thermoCS4, thermoDO);  // Sensor 4
 
 // Calibration mode flag
 bool calibrationMode = false;
+bool labviewMode = false;  // Flag for LabVIEW output format
 
 // Function to apply calibration offset
 float applyCalibratedReading(float rawTemp, float offset) {
@@ -137,6 +138,68 @@ void displayCalibrationReadings() {
   Serial.println("=====================================\n");
 }
 
+// Function to output data in LabVIEW-compatible format
+void outputLabVIEWFormat() {
+  // Read all sensors
+  float temp1C = readCalibratedCelsius(thermocouple1, calibrationOffset1);
+  float temp2C = readCalibratedCelsius(thermocouple2, calibrationOffset2);
+  float temp3C = readCalibratedCelsius(thermocouple3, calibrationOffset3);
+  float temp4C = readCalibratedCelsius(thermocouple4, calibrationOffset4);
+  
+  // Convert to Fahrenheit
+  float temp1F = calibratedCelsiusToFahrenheit(temp1C);
+  float temp2F = calibratedCelsiusToFahrenheit(temp2C);
+  float temp3F = calibratedCelsiusToFahrenheit(temp3C);
+  float temp4F = calibratedCelsiusToFahrenheit(temp4C);
+  
+  // Output in CSV format: Sensor1_C,Sensor1_F,Sensor2_C,Sensor2_F,Sensor3_C,Sensor3_F,Sensor4_C,Sensor4_F
+  Serial.print(isnan(temp1C) ? -999.0 : temp1C, 2); Serial.print(",");
+  Serial.print(isnan(temp1F) ? -999.0 : temp1F, 2); Serial.print(",");
+  Serial.print(isnan(temp2C) ? -999.0 : temp2C, 2); Serial.print(",");
+  Serial.print(isnan(temp2F) ? -999.0 : temp2F, 2); Serial.print(",");
+  Serial.print(isnan(temp3C) ? -999.0 : temp3C, 2); Serial.print(",");
+  Serial.print(isnan(temp3F) ? -999.0 : temp3F, 2); Serial.print(",");
+  Serial.print(isnan(temp4C) ? -999.0 : temp4C, 2); Serial.print(",");
+  Serial.print(isnan(temp4F) ? -999.0 : temp4F, 2);
+  Serial.println(); // End line
+}
+
+// Function to output data in JSON format (alternative for LabVIEW)
+void outputJSONFormat() {
+  Serial.print("{");
+  
+  float temp1C = readCalibratedCelsius(thermocouple1, calibrationOffset1);
+  float temp2C = readCalibratedCelsius(thermocouple2, calibrationOffset2);
+  float temp3C = readCalibratedCelsius(thermocouple3, calibrationOffset3);
+  float temp4C = readCalibratedCelsius(thermocouple4, calibrationOffset4);
+  
+  Serial.print("\"sensor1\":{\"celsius\":");
+  Serial.print(isnan(temp1C) ? -999.0 : temp1C, 2);
+  Serial.print(",\"fahrenheit\":");
+  Serial.print(isnan(temp1C) ? -999.0 : calibratedCelsiusToFahrenheit(temp1C), 2);
+  Serial.print("},");
+  
+  Serial.print("\"sensor2\":{\"celsius\":");
+  Serial.print(isnan(temp2C) ? -999.0 : temp2C, 2);
+  Serial.print(",\"fahrenheit\":");
+  Serial.print(isnan(temp2C) ? -999.0 : calibratedCelsiusToFahrenheit(temp2C), 2);
+  Serial.print("},");
+  
+  Serial.print("\"sensor3\":{\"celsius\":");
+  Serial.print(isnan(temp3C) ? -999.0 : temp3C, 2);
+  Serial.print(",\"fahrenheit\":");
+  Serial.print(isnan(temp3C) ? -999.0 : calibratedCelsiusToFahrenheit(temp3C), 2);
+  Serial.print("},");
+  
+  Serial.print("\"sensor4\":{\"celsius\":");
+  Serial.print(isnan(temp4C) ? -999.0 : temp4C, 2);
+  Serial.print(",\"fahrenheit\":");
+  Serial.print(isnan(temp4C) ? -999.0 : calibratedCelsiusToFahrenheit(temp4C), 2);
+  Serial.print("}");
+  
+  Serial.println("}");
+}
+
 void setup() {
   Serial.begin(9600);
   Serial.println("MAX6675 Multiple Type K Thermocouple Test");
@@ -146,7 +209,13 @@ void setup() {
   Serial.print("Sensor 2: "); Serial.print(calibrationOffset2); Serial.println("°C");
   Serial.print("Sensor 3: "); Serial.print(calibrationOffset3); Serial.println("°C");
   Serial.print("Sensor 4: "); Serial.print(calibrationOffset4); Serial.println("°C");
-  Serial.println("\nSend 'CAL' via serial monitor to enter calibration mode");
+  Serial.println("\nAvailable Commands:");
+  Serial.println("  CAL    - Enter calibration mode");
+  Serial.println("  EXIT   - Exit current mode");
+  Serial.println("  LABVIEW - Toggle LabVIEW output format");
+  Serial.println("  CSV    - Enable CSV output for LabVIEW");
+  Serial.println("  JSON   - Enable JSON output for LabVIEW");
+  Serial.println("  HUMAN  - Enable human-readable output");
   Serial.println("Waiting for MAX6675 sensors to stabilize...");
   delay(500); // Wait for MAX6675 to stabilize
 }
@@ -162,7 +231,19 @@ void loop() {
       enterCalibrationMode();
     } else if (command == "EXIT") {
       calibrationMode = false;
-      Serial.println("Exiting calibration mode\n");
+      labviewMode = false;
+      Serial.println("Exiting current mode - returning to human-readable output\n");
+    } else if (command == "LVON" || command == "LABVIEW" || command == "CSV") {
+      labviewMode = true;
+      calibrationMode = false;
+      Serial.println("LabVIEW CSV mode enabled");
+      Serial.println("Format: Sensor1_C,Sensor1_F,Sensor2_C,Sensor2_F,Sensor3_C,Sensor3_F,Sensor4_C,Sensor4_F");
+      Serial.println("Error values represented as -999.0");
+      delay(1000);
+    } else if (command == "LVOFF" || command == "HUMAN") {
+      labviewMode = false;
+      calibrationMode = false;
+      Serial.println("Human-readable mode enabled\n");
     }
   }
   
@@ -172,7 +253,14 @@ void loop() {
     return;
   }
   
-  // Normal operation with calibrated readings
+  if (labviewMode) {
+    // Output only LabVIEW-compatible format
+    outputLabVIEWFormat();
+    delay(1000); // Faster readings for LabVIEW
+    return;
+  }
+  
+  // Normal human-readable operation with calibrated readings
   Serial.println("=== CALIBRATED Temperature Readings ===");
   
   // Read from Sensor 1 (calibrated)
