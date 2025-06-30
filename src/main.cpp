@@ -16,18 +16,30 @@ int thermoCS1 = 53;   // First sensor CS
 int thermoCS2 = 49;   // Second sensor CS
 int thermoCS3 = 48;   // Third sensor CS
 int thermoCS4 = 47;   // Fourth sensor CS
+int thermoCS5 = 46;   // Fifth sensor CS
+int thermoCS6 = 45;   // Sixth sensor CS
+int thermoCS7 = 44;   // Seventh sensor CS
+int thermoCS8 = 43;   // Eighth sensor CS
 
 // Calibration offsets for each sensor (adjust these values)
 float calibrationOffset1 = 0.0;  // Sensor 1 offset in °C
 float calibrationOffset2 = 0.0;  // Sensor 2 offset in °C
 float calibrationOffset3 = 0.0;  // Sensor 3 offset in °C
 float calibrationOffset4 = 0.0;  // Sensor 4 offset in °C
+float calibrationOffset5 = 0.0;  // Sensor 5 offset in °C
+float calibrationOffset6 = 0.0;  // Sensor 6 offset in °C
+float calibrationOffset7 = 0.0;  // Sensor 7 offset in °C
+float calibrationOffset8 = 0.0;  // Sensor 8 offset in °C
 
 // Create multiple MAX6675 objects
 MAX6675 thermocouple1(thermoCLK, thermoCS1, thermoDO);  // Sensor 1
 MAX6675 thermocouple2(thermoCLK, thermoCS2, thermoDO);  // Sensor 2
 MAX6675 thermocouple3(thermoCLK, thermoCS3, thermoDO);  // Sensor 3
 MAX6675 thermocouple4(thermoCLK, thermoCS4, thermoDO);  // Sensor 4
+MAX6675 thermocouple5(thermoCLK, thermoCS5, thermoDO);  // Sensor 5
+MAX6675 thermocouple6(thermoCLK, thermoCS6, thermoDO);  // Sensor 6
+MAX6675 thermocouple7(thermoCLK, thermoCS7, thermoDO);  // Sensor 7
+MAX6675 thermocouple8(thermoCLK, thermoCS8, thermoDO);  // Sensor 8
 
 // Calibration mode flag
 bool calibrationMode = false;
@@ -78,6 +90,10 @@ void displayCalibrationReadings() {
   double temp2 = thermocouple2.readCelsius();
   double temp3 = thermocouple3.readCelsius();
   double temp4 = thermocouple4.readCelsius();
+  double temp5 = thermocouple5.readCelsius();
+  double temp6 = thermocouple6.readCelsius();
+  double temp7 = thermocouple7.readCelsius();
+  double temp8 = thermocouple8.readCelsius();
   
   Serial.print("Sensor 1 RAW: ");
   if (isnan(temp1)) {
@@ -107,6 +123,34 @@ void displayCalibrationReadings() {
     Serial.print(temp4); Serial.println("°C");
   }
   
+  Serial.print("Sensor 5 RAW: ");
+  if (isnan(temp5)) {
+    Serial.println("ERROR");
+  } else {
+    Serial.print(temp5); Serial.println("°C");
+  }
+  
+  Serial.print("Sensor 6 RAW: ");
+  if (isnan(temp6)) {
+    Serial.println("ERROR");
+  } else {
+    Serial.print(temp6); Serial.println("°C");
+  }
+  
+  Serial.print("Sensor 7 RAW: ");
+  if (isnan(temp7)) {
+    Serial.println("ERROR");
+  } else {
+    Serial.print(temp7); Serial.println("°C");
+  }
+  
+  Serial.print("Sensor 8 RAW: ");
+  if (isnan(temp8)) {
+    Serial.println("ERROR");
+  } else {
+    Serial.print(temp8); Serial.println("°C");
+  }
+  
   // Calculate average (excluding NaN values)
   float sum = 0;
   int count = 0;
@@ -114,6 +158,10 @@ void displayCalibrationReadings() {
   if (!isnan(temp2)) { sum += temp2; count++; }
   if (!isnan(temp3)) { sum += temp3; count++; }
   if (!isnan(temp4)) { sum += temp4; count++; }
+  if (!isnan(temp5)) { sum += temp5; count++; }
+  if (!isnan(temp6)) { sum += temp6; count++; }
+  if (!isnan(temp7)) { sum += temp7; count++; }
+  if (!isnan(temp8)) { sum += temp8; count++; }
   
   if (count > 0) {
     float average = sum / count;
@@ -133,6 +181,18 @@ void displayCalibrationReadings() {
     if (!isnan(temp4)) {
       Serial.print("Sensor 4: "); Serial.print(temp4 - average, 2); Serial.println("°C");
     }
+    if (!isnan(temp5)) {
+      Serial.print("Sensor 5: "); Serial.print(temp5 - average, 2); Serial.println("°C");
+    }
+    if (!isnan(temp6)) {
+      Serial.print("Sensor 6: "); Serial.print(temp6 - average, 2); Serial.println("°C");
+    }
+    if (!isnan(temp7)) {
+      Serial.print("Sensor 7: "); Serial.print(temp7 - average, 2); Serial.println("°C");
+    }
+    if (!isnan(temp8)) {
+      Serial.print("Sensor 8: "); Serial.print(temp8 - average, 2); Serial.println("°C");
+    }
   }
   
   Serial.println("=====================================\n");
@@ -145,14 +205,22 @@ void outputLabVIEWFormat() {
   float temp2C = readCalibratedCelsius(thermocouple2, calibrationOffset2);
   float temp3C = readCalibratedCelsius(thermocouple3, calibrationOffset3);
   float temp4C = readCalibratedCelsius(thermocouple4, calibrationOffset4);
+  float temp5C = readCalibratedCelsius(thermocouple5, calibrationOffset5);
+  float temp6C = readCalibratedCelsius(thermocouple6, calibrationOffset6);
+  float temp7C = readCalibratedCelsius(thermocouple7, calibrationOffset7);
+  float temp8C = readCalibratedCelsius(thermocouple8, calibrationOffset8);
   
   // Convert to Fahrenheit
   float temp1F = calibratedCelsiusToFahrenheit(temp1C);
   float temp2F = calibratedCelsiusToFahrenheit(temp2C);
   float temp3F = calibratedCelsiusToFahrenheit(temp3C);
   float temp4F = calibratedCelsiusToFahrenheit(temp4C);
+  float temp5F = calibratedCelsiusToFahrenheit(temp5C);
+  float temp6F = calibratedCelsiusToFahrenheit(temp6C);
+  float temp7F = calibratedCelsiusToFahrenheit(temp7C);
+  float temp8F = calibratedCelsiusToFahrenheit(temp8C);
   
-  // Output in CSV format: Sensor1_C,Sensor1_F,Sensor2_C,Sensor2_F,Sensor3_C,Sensor3_F,Sensor4_C,Sensor4_F
+  // Output in CSV format: S1_C,S1_F,S2_C,S2_F,S3_C,S3_F,S4_C,S4_F,S5_C,S5_F,S6_C,S6_F,S7_C,S7_F,S8_C,S8_F
   Serial.print(isnan(temp1C) ? -999.0 : temp1C, 2); Serial.print(",");
   Serial.print(isnan(temp1F) ? -999.0 : temp1F, 2); Serial.print(",");
   Serial.print(isnan(temp2C) ? -999.0 : temp2C, 2); Serial.print(",");
@@ -160,7 +228,15 @@ void outputLabVIEWFormat() {
   Serial.print(isnan(temp3C) ? -999.0 : temp3C, 2); Serial.print(",");
   Serial.print(isnan(temp3F) ? -999.0 : temp3F, 2); Serial.print(",");
   Serial.print(isnan(temp4C) ? -999.0 : temp4C, 2); Serial.print(",");
-  Serial.print(isnan(temp4F) ? -999.0 : temp4F, 2);
+  Serial.print(isnan(temp4F) ? -999.0 : temp4F, 2); Serial.print(",");
+  Serial.print(isnan(temp5C) ? -999.0 : temp5C, 2); Serial.print(",");
+  Serial.print(isnan(temp5F) ? -999.0 : temp5F, 2); Serial.print(",");
+  Serial.print(isnan(temp6C) ? -999.0 : temp6C, 2); Serial.print(",");
+  Serial.print(isnan(temp6F) ? -999.0 : temp6F, 2); Serial.print(",");
+  Serial.print(isnan(temp7C) ? -999.0 : temp7C, 2); Serial.print(",");
+  Serial.print(isnan(temp7F) ? -999.0 : temp7F, 2); Serial.print(",");
+  Serial.print(isnan(temp8C) ? -999.0 : temp8C, 2); Serial.print(",");
+  Serial.print(isnan(temp8F) ? -999.0 : temp8F, 2);
   Serial.println(); // End line
 }
 
@@ -203,12 +279,16 @@ void outputJSONFormat() {
 void setup() {
   Serial.begin(9600);
   Serial.println("MAX6675 Multiple Type K Thermocouple Test");
-  Serial.println("Reading from 4 sensors...");
+  Serial.println("Reading from 8 sensors...");
   Serial.println("Current calibration offsets:");
   Serial.print("Sensor 1: "); Serial.print(calibrationOffset1); Serial.println("°C");
   Serial.print("Sensor 2: "); Serial.print(calibrationOffset2); Serial.println("°C");
   Serial.print("Sensor 3: "); Serial.print(calibrationOffset3); Serial.println("°C");
   Serial.print("Sensor 4: "); Serial.print(calibrationOffset4); Serial.println("°C");
+  Serial.print("Sensor 5: "); Serial.print(calibrationOffset5); Serial.println("°C");
+  Serial.print("Sensor 6: "); Serial.print(calibrationOffset6); Serial.println("°C");
+  Serial.print("Sensor 7: "); Serial.print(calibrationOffset7); Serial.println("°C");
+  Serial.print("Sensor 8: "); Serial.print(calibrationOffset8); Serial.println("°C");
   Serial.println("\nAvailable Commands:");
   Serial.println("  CAL    - Enter calibration mode");
   Serial.println("  EXIT   - Exit current mode");
@@ -237,7 +317,7 @@ void loop() {
       labviewMode = true;
       calibrationMode = false;
       Serial.println("LabVIEW CSV mode enabled");
-      Serial.println("Format: Sensor1_C,Sensor1_F,Sensor2_C,Sensor2_F,Sensor3_C,Sensor3_F,Sensor4_C,Sensor4_F");
+      Serial.println("Format: S1_C,S1_F,S2_C,S2_F,S3_C,S3_F,S4_C,S4_F,S5_C,S5_F,S6_C,S6_F,S7_C,S7_F,S8_C,S8_F");
       Serial.println("Error values represented as -999.0");
       delay(1000);
     } else if (command == "LVOFF" || command == "HUMAN") {
@@ -318,6 +398,66 @@ void loop() {
     Serial.print(temp4C, 2);
     Serial.print("°C / ");
     Serial.print(temp4F, 2);
+    Serial.println("°F");
+  }
+  
+  delay(100);
+  
+  // Read from Sensor 5 (calibrated)
+  float temp5C = readCalibratedCelsius(thermocouple5, calibrationOffset5);
+  if (isnan(temp5C)) {
+    Serial.println("Sensor 5: Error reading thermocouple!");
+  } else {
+    float temp5F = calibratedCelsiusToFahrenheit(temp5C);
+    Serial.print("Sensor 5: ");
+    Serial.print(temp5C, 2);
+    Serial.print("°C / ");
+    Serial.print(temp5F, 2);
+    Serial.println("°F");
+  }
+  
+  delay(100);
+  
+  // Read from Sensor 6 (calibrated)
+  float temp6C = readCalibratedCelsius(thermocouple6, calibrationOffset6);
+  if (isnan(temp6C)) {
+    Serial.println("Sensor 6: Error reading thermocouple!");
+  } else {
+    float temp6F = calibratedCelsiusToFahrenheit(temp6C);
+    Serial.print("Sensor 6: ");
+    Serial.print(temp6C, 2);
+    Serial.print("°C / ");
+    Serial.print(temp6F, 2);
+    Serial.println("°F");
+  }
+  
+  delay(100);
+  
+  // Read from Sensor 7 (calibrated)
+  float temp7C = readCalibratedCelsius(thermocouple7, calibrationOffset7);
+  if (isnan(temp7C)) {
+    Serial.println("Sensor 7: Error reading thermocouple!");
+  } else {
+    float temp7F = calibratedCelsiusToFahrenheit(temp7C);
+    Serial.print("Sensor 7: ");
+    Serial.print(temp7C, 2);
+    Serial.print("°C / ");
+    Serial.print(temp7F, 2);
+    Serial.println("°F");
+  }
+  
+  delay(100);
+  
+  // Read from Sensor 8 (calibrated)
+  float temp8C = readCalibratedCelsius(thermocouple8, calibrationOffset8);
+  if (isnan(temp8C)) {
+    Serial.println("Sensor 8: Error reading thermocouple!");
+  } else {
+    float temp8F = calibratedCelsiusToFahrenheit(temp8C);
+    Serial.print("Sensor 8: ");
+    Serial.print(temp8C, 2);
+    Serial.print("°C / ");
+    Serial.print(temp8F, 2);
     Serial.println("°F");
   }
   

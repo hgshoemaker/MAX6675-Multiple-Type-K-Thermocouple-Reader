@@ -4,19 +4,20 @@ A comprehensive Arduino Mega 2560 project for reading multiple Type K thermocoup
 
 ## Features
 
-- 🌡️ **Multiple Sensor Support**: Read up to 4 MAX6675 sensors simultaneously
+- 🌡️ **Multiple Sensor Support**: Read up to 8 MAX6675 sensors simultaneously
 - 🎯 **Calibration System**: Built-in calibration mode for accurate readings
 - 📊 **LabVIEW Integration**: CSV output format for data acquisition systems
 - 🔧 **Easy Configuration**: Simple serial commands for mode switching
 - 📈 **Dual Units**: Temperature display in both Celsius and Fahrenheit
 - ⚡ **Error Handling**: Robust detection of sensor failures and disconnections
+- 🔌 **Expandable**: Easy to add more sensors (up to 30+ possible)
 
 ## Hardware Requirements
 
 ### Components
 - Arduino Mega 2560
-- 1-4x MAX6675 Cold Junction Compensated K-Thermocouple to Digital Converter
-- 1-4x Type K Thermocouples
+- 1-8x MAX6675 Cold Junction Compensated K-Thermocouple to Digital Converter
+- 1-8x Type K Thermocouples
 - Jumper wires
 - Breadboard or PCB for connections
 
@@ -103,6 +104,10 @@ Sensor 1: 23.50°C / 74.30°F
 Sensor 2: 24.10°C / 75.38°F
 Sensor 3: 22.75°C / 72.95°F
 Sensor 4: 25.00°C / 77.00°F
+Sensor 5: 23.25°C / 73.85°F
+Sensor 6: 24.50°C / 76.10°F
+Sensor 7: 23.00°C / 73.40°F
+Sensor 8: 24.75°C / 76.55°F
 ```
 
 #### 2. Calibration Mode
@@ -113,20 +118,18 @@ Sensor 1 RAW: 2.50°C
 Sensor 2 RAW: -1.25°C
 Sensor 3 RAW: 0.75°C
 Sensor 4 RAW: -0.50°C
-Average: 0.38°C
-
-Differences from average:
-Sensor 1: 2.12°C
-Sensor 2: -1.63°C
-Sensor 3: 0.37°C
-Sensor 4: -0.88°C
+Sensor 5 RAW: 1.00°C
+Sensor 6 RAW: -0.75°C
+Sensor 7 RAW: 0.25°C
+Sensor 8 RAW: -1.00°C
+Average: 0.13°C
 ```
 
 #### 3. LabVIEW Mode
 Enable by sending `LVON` command for CSV output:
 ```
-23.50,74.30,24.10,75.38,22.75,72.95,25.00,77.00
-23.75,74.75,24.25,75.65,23.00,73.40,25.25,77.45
+23.50,74.30,24.10,75.38,22.75,72.95,25.00,77.00,23.25,73.85,24.50,76.10,23.00,73.40,24.75,76.55
+23.75,74.75,24.25,75.65,23.00,73.40,25.25,77.45,23.50,74.30,24.75,76.55,23.25,73.85,25.00,77.00
 ```
 
 ### Serial Commands
@@ -189,7 +192,7 @@ Individual MAX6675 modules may have slight variations. Calibration ensures all s
 - **Flow Control:** None
 
 ### Data Format
-- **CSV Format:** `Sensor1_C,Sensor1_F,Sensor2_C,Sensor2_F,Sensor3_C,Sensor3_F,Sensor4_C,Sensor4_F`
+- **CSV Format:** `S1_C,S1_F,S2_C,S2_F,S3_C,S3_F,S4_C,S4_F,S5_C,S5_F,S6_C,S6_F,S7_C,S7_F,S8_C,S8_F`
 - **Update Rate:** 1 second
 - **Error Values:** -999.0 (indicates sensor error/disconnection)
 
@@ -243,10 +246,12 @@ Individual MAX6675 modules may have slight variations. Calibration ensures all s
 - Verify VISA settings match Arduino configuration
 - Check for proper string parsing in LabVIEW
 
-### Temperature Ranges
-- **MAX6675 Range:** 0°C to 1024°C (32°F to 1875°F)
-- **Resolution:** 0.25°C (0.45°F)
-- **Accuracy:** ±2°C (±3.6°F) typical, ±1°C after calibration
+### Performance Notes
+
+- **Reading cycle time**: ~1.6 seconds for all 8 sensors (100ms delay between sensors)
+- **Memory usage**: ~1886 bytes RAM (23% of Arduino Mega)
+- **Flash usage**: ~13254 bytes (5.2% of Arduino Mega)
+- **LabVIEW CSV output**: 16 values per line (8 sensors × 2 units each)
 
 ## File Structure
 
@@ -264,7 +269,8 @@ Type-K-Temprature/
 ├── README.md                    # This file
 ├── CALIBRATION_GUIDE.md         # Detailed calibration instructions
 ├── LABVIEW_INTEGRATION.md       # LabVIEW setup guide
-└── SENSOR_EXPANSION_GUIDE.md    # Guide for adding more sensors
+├── SENSOR_EXPANSION_GUIDE.md    # Guide for adding more sensors
+└── 8_SENSOR_WIRING_GUIDE.md     # Complete wiring guide for 8 sensors
 ```
 
 ## Contributing
