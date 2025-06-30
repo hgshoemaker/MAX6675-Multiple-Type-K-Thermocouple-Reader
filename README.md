@@ -51,6 +51,34 @@ GND      ──────────── GND
 SCK      ──────────── Pin 52 (shared)
 SO       ──────────── Pin 50 (shared)
 CS       ──────────── Pin 47
+
+MAX6675 Module 5:
+VCC      ──────────── 5V
+GND      ──────────── GND
+SCK      ──────────── Pin 52 (shared)
+SO       ──────────── Pin 50 (shared)
+CS       ──────────── Pin 46
+
+MAX6675 Module 6:
+VCC      ──────────── 5V
+GND      ──────────── GND
+SCK      ──────────── Pin 52 (shared)
+SO       ──────────── Pin 50 (shared)
+CS       ──────────── Pin 45
+
+MAX6675 Module 7:
+VCC      ──────────── 5V
+GND      ──────────── GND
+SCK      ──────────── Pin 52 (shared)
+SO       ──────────── Pin 50 (shared)
+CS       ──────────── Pin 44
+
+MAX6675 Module 8:
+VCC      ──────────── 5V
+GND      ──────────── GND
+SCK      ──────────── Pin 52 (shared)
+SO       ──────────── Pin 50 (shared)
+CS       ──────────── Pin 43
 ```
 
 ## Software Requirements
