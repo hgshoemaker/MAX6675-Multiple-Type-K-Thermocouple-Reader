@@ -138,4 +138,4 @@ To test one sensor at a time, temporarily disconnect other CS pins and verify ea
 - **Reading cycle time**: ~1.6 seconds for all 8 sensors (100ms delay between sensors)
 - **Memory usage**: ~1886 bytes RAM (23% of Arduino Mega)
 - **Flash usage**: ~13254 bytes (5.2% of Arduino Mega)
-- **LabVIEW CSV output**: 16 values per line (8 sensors × 2 units each)
+- **LabVIEW CSV output**: 8 values per line (8 sensors in Celsius only)

@@ -110,10 +110,14 @@ Sensor 4: -0.88°C
 ## Normal Operation Output Example
 ```
 === CALIBRATED Temperature Readings ===
-Sensor 1: 0.00°C / 32.00°F
-Sensor 2: 0.00°C / 32.00°F
-Sensor 3: 0.00°C / 32.00°F
-Sensor 4: 0.00°C / 32.00°F
+Sensor 1: 0.00°C
+Sensor 2: 0.00°C
+Sensor 3: 0.00°C
+Sensor 4: 0.00°C
+Sensor 5: 0.00°C
+Sensor 6: 0.00°C
+Sensor 7: 0.00°C
+Sensor 8: 0.00°C
 ```
 
 ## Calibration Tips

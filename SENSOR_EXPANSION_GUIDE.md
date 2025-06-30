@@ -81,11 +81,13 @@ You can add up to 8+ MAX6675 sensors by using different CS pins:
 3. Convert reading to temperature using sensor-specific formula
 
 ## Current Code Features
-- Reads 4 MAX6675 sensors
-- Displays temperatures in °C and °F
+- Reads 8 MAX6675 sensors
+- Displays temperatures in °C
 - Error handling for disconnected sensors
 - Clear serial output formatting
 - 2-second reading interval
+- LabVIEW/CSV output mode
+- Built-in calibration system
 
 ## Pin Usage Summary
 **Used Pins:**

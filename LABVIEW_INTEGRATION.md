@@ -47,20 +47,20 @@ Send the command: `LVON`
 **Response:**
 ```
 LabVIEW CSV mode enabled
-Format: Sensor1_C,Sensor1_F,Sensor2_C,Sensor2_F,Sensor3_C,Sensor3_F,Sensor4_C,Sensor4_F
+Format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C
 Error values represented as -999.0
 ```
 
 ### Step 2: LabVIEW Output Format
 **CSV Format (recommended for LabVIEW):**
 ```
-23.50,74.30,24.10,75.38,22.75,72.95,25.00,77.00
-23.75,74.75,24.25,75.65,23.00,73.40,25.25,77.45
+23.50,24.10,22.75,25.00,23.25,24.50,23.00,24.75
+23.75,24.25,23.00,25.25,23.50,24.75,23.25,25.00
 ```
 
 **Data Structure:**
 - 8 values per line, comma-separated
-- Values in order: Sensor1_°C, Sensor1_°F, Sensor2_°C, Sensor2_°F, Sensor3_°C, Sensor3_°F, Sensor4_°C, Sensor4_°F
+- Values in order: Sensor1_°C, Sensor2_°C, Sensor3_°C, Sensor4_°C, Sensor5_°C, Sensor6_°C, Sensor7_°C, Sensor8_°C
 - Error/disconnected sensors show as `-999.0`
 - Update rate: 1 second in LabVIEW mode (faster than human mode)
 

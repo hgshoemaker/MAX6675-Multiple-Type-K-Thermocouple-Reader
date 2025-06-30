@@ -8,7 +8,7 @@ A comprehensive Arduino Mega 2560 project for reading multiple Type K thermocoup
 - 🎯 **Calibration System**: Built-in calibration mode for accurate readings
 - 📊 **LabVIEW Integration**: CSV output format for data acquisition systems
 - 🔧 **Easy Configuration**: Simple serial commands for mode switching
-- 📈 **Dual Units**: Temperature display in both Celsius and Fahrenheit
+- 📈 **Temperature Display**: Celsius temperature readings for all sensors
 - ⚡ **Error Handling**: Robust detection of sensor failures and disconnections
 - 🔌 **Expandable**: Easy to add more sensors (up to 30+ possible)
 
@@ -100,14 +100,14 @@ CS       ──────────── Pin 47
 Displays human-readable temperature readings:
 ```
 === CALIBRATED Temperature Readings ===
-Sensor 1: 23.50°C / 74.30°F
-Sensor 2: 24.10°C / 75.38°F
-Sensor 3: 22.75°C / 72.95°F
-Sensor 4: 25.00°C / 77.00°F
-Sensor 5: 23.25°C / 73.85°F
-Sensor 6: 24.50°C / 76.10°F
-Sensor 7: 23.00°C / 73.40°F
-Sensor 8: 24.75°C / 76.55°F
+Sensor 1: 23.50°C
+Sensor 2: 24.10°C
+Sensor 3: 22.75°C
+Sensor 4: 25.00°C
+Sensor 5: 23.25°C
+Sensor 6: 24.50°C
+Sensor 7: 23.00°C
+Sensor 8: 24.75°C
 ```
 
 #### 2. Calibration Mode
@@ -128,8 +128,8 @@ Average: 0.13°C
 #### 3. LabVIEW Mode
 Enable by sending `LVON` command for CSV output:
 ```
-23.50,74.30,24.10,75.38,22.75,72.95,25.00,77.00,23.25,73.85,24.50,76.10,23.00,73.40,24.75,76.55
-23.75,74.75,24.25,75.65,23.00,73.40,25.25,77.45,23.50,74.30,24.75,76.55,23.25,73.85,25.00,77.00
+23.50,24.10,22.75,25.00,23.25,24.50,23.00,24.75
+23.75,24.25,23.00,25.25,23.50,24.75,23.25,25.00
 ```
 
 ### Serial Commands
@@ -192,7 +192,7 @@ Individual MAX6675 modules may have slight variations. Calibration ensures all s
 - **Flow Control:** None
 
 ### Data Format
-- **CSV Format:** `S1_C,S1_F,S2_C,S2_F,S3_C,S3_F,S4_C,S4_F,S5_C,S5_F,S6_C,S6_F,S7_C,S7_F,S8_C,S8_F`
+- **CSV Format:** `S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C`
 - **Update Rate:** 1 second
 - **Error Values:** -999.0 (indicates sensor error/disconnection)
 
@@ -251,7 +251,7 @@ Individual MAX6675 modules may have slight variations. Calibration ensures all s
 - **Reading cycle time**: ~1.6 seconds for all 8 sensors (100ms delay between sensors)
 - **Memory usage**: ~1886 bytes RAM (23% of Arduino Mega)
 - **Flash usage**: ~13254 bytes (5.2% of Arduino Mega)
-- **LabVIEW CSV output**: 16 values per line (8 sensors × 2 units each)
+- **LabVIEW CSV output**: 8 values per line (8 sensors in Celsius)
 
 ## File Structure
 
@@ -297,7 +297,7 @@ For questions or issues:
 - **v1.0.0**: Initial release with basic thermocouple reading
 - **v1.1.0**: Added calibration system
 - **v1.2.0**: Added LabVIEW integration and multiple output formats
-- **v1.3.0**: Enhanced error handling and documentation
+- **v2.1.0**: Updated to Celsius-only output for cleaner data format
 
 ---
 
