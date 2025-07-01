@@ -43,7 +43,7 @@ MAX6675 thermocouple8(thermoCLK, thermoCS8, thermoDO);  // Sensor 8
 
 // Calibration mode flag
 bool calibrationMode = false;
-bool labviewMode = false;  // Flag for LabVIEW output format
+bool labviewMode = true;  // Flag for LabVIEW output format
 
 // Function to apply calibration offset
 float applyCalibratedReading(float rawTemp, float offset) {
@@ -304,9 +304,9 @@ void loop() {
     } else if (command == "LVON" || command == "LABVIEW" || command == "CSV") {
       labviewMode = true;
       calibrationMode = false;
-      Serial.println("LabVIEW CSV mode enabled");
-      Serial.println("Format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C");
-      Serial.println("Error values represented as -999.0");
+      //Serial.println("LabVIEW CSV mode enabled");
+      //Serial.println("Format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C");
+      //Serial.println("Error values represented as -999.0");
       delay(1000);
     } else if (command == "LVOFF" || command == "HUMAN") {
       labviewMode = false;
