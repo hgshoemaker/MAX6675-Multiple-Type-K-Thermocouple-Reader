@@ -44,6 +44,14 @@ MAX6675 thermocouple8(thermoCLK, thermoCS8, thermoDO);  // Sensor 8
 // Calibration mode flag
 bool calibrationMode = false;
 bool labviewMode = true;  // Flag for LabVIEW output format
+bool visaMode = false;    // Flag for VISA command-response mode
+
+// VISA command buffer
+String commandBuffer = "";
+bool commandReady = false;
+
+// VISA instrument identification
+const String INSTRUMENT_ID = "MAX6675_THERMOCOUPLE_READER,v1.0,SN001";
 
 // Function to apply calibration offset
 float applyCalibratedReading(float rawTemp, float offset) {
@@ -264,6 +272,161 @@ void outputJSONFormat() {
   Serial.println("}");
 }
 
+// Function to process VISA/SCPI commands
+void processVisaCommand(String command) {
+  command.trim();
+  command.toUpperCase();
+  
+  // Standard SCPI identification query
+  if (command == "*IDN?") {
+    Serial.println(INSTRUMENT_ID);
+    return;
+  }
+  
+  // Reset command
+  if (command == "*RST") {
+    calibrationMode = false;
+    labviewMode = false;
+    visaMode = true;
+    Serial.println("OK");
+    return;
+  }
+  
+  // Temperature measurement queries
+  if (command == "MEAS:TEMP? ALL") {
+    // Return all temperatures in CSV format
+    float temp1C = readCalibratedCelsius(thermocouple1, calibrationOffset1);
+    float temp2C = readCalibratedCelsius(thermocouple2, calibrationOffset2);
+    float temp3C = readCalibratedCelsius(thermocouple3, calibrationOffset3);
+    float temp4C = readCalibratedCelsius(thermocouple4, calibrationOffset4);
+    float temp5C = readCalibratedCelsius(thermocouple5, calibrationOffset5);
+    float temp6C = readCalibratedCelsius(thermocouple6, calibrationOffset6);
+    float temp7C = readCalibratedCelsius(thermocouple7, calibrationOffset7);
+    float temp8C = readCalibratedCelsius(thermocouple8, calibrationOffset8);
+    
+    Serial.print(isnan(temp1C) ? -999.0 : temp1C, 2); Serial.print(",");
+    Serial.print(isnan(temp2C) ? -999.0 : temp2C, 2); Serial.print(",");
+    Serial.print(isnan(temp3C) ? -999.0 : temp3C, 2); Serial.print(",");
+    Serial.print(isnan(temp4C) ? -999.0 : temp4C, 2); Serial.print(",");
+    Serial.print(isnan(temp5C) ? -999.0 : temp5C, 2); Serial.print(",");
+    Serial.print(isnan(temp6C) ? -999.0 : temp6C, 2); Serial.print(",");
+    Serial.print(isnan(temp7C) ? -999.0 : temp7C, 2); Serial.print(",");
+    Serial.print(isnan(temp8C) ? -999.0 : temp8C, 2);
+    Serial.println();
+    return;
+  }
+  
+  // Individual sensor queries
+  if (command.startsWith("MEAS:TEMP? CH")) {
+    int channel = command.substring(13).toInt();
+    if (channel >= 1 && channel <= 8) {
+      float temp = NAN;
+      switch(channel) {
+        case 1: temp = readCalibratedCelsius(thermocouple1, calibrationOffset1); break;
+        case 2: temp = readCalibratedCelsius(thermocouple2, calibrationOffset2); break;
+        case 3: temp = readCalibratedCelsius(thermocouple3, calibrationOffset3); break;
+        case 4: temp = readCalibratedCelsius(thermocouple4, calibrationOffset4); break;
+        case 5: temp = readCalibratedCelsius(thermocouple5, calibrationOffset5); break;
+        case 6: temp = readCalibratedCelsius(thermocouple6, calibrationOffset6); break;
+        case 7: temp = readCalibratedCelsius(thermocouple7, calibrationOffset7); break;
+        case 8: temp = readCalibratedCelsius(thermocouple8, calibrationOffset8); break;
+      }
+      Serial.println(isnan(temp) ? -999.0 : temp, 2);
+      return;
+    }
+  }
+  
+  // System status queries
+  if (command == "SYST:ERR?") {
+    Serial.println("0,\"No error\"");
+    return;
+  }
+  
+  if (command == "SYST:VERS?") {
+    Serial.println("1.0");
+    return;
+  }
+  
+  // Configuration queries
+  if (command == "CONF:SENS:COUN?") {
+    Serial.println("8");
+    return;
+  }
+  
+  if (command == "CONF:RATE?") {
+    Serial.println("1.0");  // 1 Hz update rate
+    return;
+  }
+  
+  // Mode control
+  if (command == "MODE:VISA") {
+    visaMode = true;
+    labviewMode = false;
+    calibrationMode = false;
+    Serial.println("OK");
+    return;
+  }
+  
+  if (command == "MODE:LABVIEW") {
+    visaMode = false;
+    labviewMode = true;
+    calibrationMode = false;
+    Serial.println("OK");
+    return;
+  }
+  
+  if (command == "MODE:HUMAN") {
+    visaMode = false;
+    labviewMode = false;
+    calibrationMode = false;
+    Serial.println("OK");
+    return;
+  }
+  
+  // Help command
+  if (command == "HELP?" || command == "?") {
+    Serial.println("Available VISA Commands:");
+    Serial.println("*IDN? - Instrument identification");
+    Serial.println("*RST - Reset to VISA mode");
+    Serial.println("MEAS:TEMP? ALL - Read all temperatures");
+    Serial.println("MEAS:TEMP? CH<n> - Read channel n (1-8)");
+    Serial.println("SYST:ERR? - System error query");
+    Serial.println("SYST:VERS? - System version");
+    Serial.println("CONF:SENS:COUN? - Sensor count");
+    Serial.println("CONF:RATE? - Update rate");
+    Serial.println("MODE:VISA - Enable VISA mode");
+    Serial.println("MODE:LABVIEW - Enable LabVIEW mode");
+    Serial.println("MODE:HUMAN - Enable human mode");
+    Serial.println("HELP? - This help message");
+    return;
+  }
+  
+  // Unknown command
+  Serial.println("ERROR: Unknown command");
+}
+
+// Function to handle VISA serial communication
+void handleVisaSerial() {
+  while (Serial.available()) {
+    char c = Serial.read();
+    
+    if (c == '\n' || c == '\r') {
+      if (commandBuffer.length() > 0) {
+        commandReady = true;
+        break;
+      }
+    } else {
+      commandBuffer += c;
+    }
+  }
+  
+  if (commandReady) {
+    processVisaCommand(commandBuffer);
+    commandBuffer = "";
+    commandReady = false;
+  }
+}
+
 void setup() {
   Serial.begin(9600);
   Serial.println("MAX6675 Multiple Type K Thermocouple Test");
@@ -284,11 +447,19 @@ void setup() {
   Serial.println("  CSV    - Enable CSV output for LabVIEW");
   Serial.println("  JSON   - Enable JSON output for LabVIEW");
   Serial.println("  HUMAN  - Enable human-readable output");
+  Serial.println("  VISA   - Enable VISA command-response mode");
+  Serial.println("  VSON   - Enable VISA mode (alias)");
   Serial.println("Waiting for MAX6675 sensors to stabilize...");
   delay(500); // Wait for MAX6675 to stabilize
 }
 
 void loop() {
+  // Handle VISA mode separately with command-response protocol
+  if (visaMode) {
+    handleVisaSerial();
+    return;  // Don't do continuous output in VISA mode
+  }
+  
   // Check for serial commands
   if (Serial.available() > 0) {
     String command = Serial.readString();
@@ -300,10 +471,12 @@ void loop() {
     } else if (command == "EXIT") {
       calibrationMode = false;
       labviewMode = false;
+      visaMode = false;
       Serial.println("Exiting current mode - returning to human-readable output\n");
     } else if (command == "LVON" || command == "LABVIEW" || command == "CSV") {
       labviewMode = true;
       calibrationMode = false;
+      visaMode = false;
       //Serial.println("LabVIEW CSV mode enabled");
       //Serial.println("Format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C");
       //Serial.println("Error values represented as -999.0");
@@ -311,7 +484,15 @@ void loop() {
     } else if (command == "LVOFF" || command == "HUMAN") {
       labviewMode = false;
       calibrationMode = false;
+      visaMode = false;
       Serial.println("Human-readable mode enabled\n");
+    } else if (command == "VISA" || command == "VSON") {
+      visaMode = true;
+      labviewMode = false;
+      calibrationMode = false;
+      Serial.println("VISA command-response mode enabled");
+      Serial.println("Send '*IDN?' to identify device or 'HELP?' for commands");
+      return;
     }
   }
   

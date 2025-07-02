@@ -7,6 +7,7 @@ A comprehensive Arduino Mega 2560 project for reading multiple Type K thermocoup
 - 🌡️ **Multiple Sensor Support**: Read up to 8 MAX6675 sensors simultaneously
 - 🎯 **Calibration System**: Built-in calibration mode for accurate readings
 - 📊 **LabVIEW Integration**: CSV output format for data acquisition systems
+- 🔧 **VISA Command Mode**: SCPI-compliant instrument interface for professional use
 - 🔧 **Easy Configuration**: Simple serial commands for mode switching
 - 📈 **Temperature Display**: Celsius temperature readings for all sensors
 - ⚡ **Error Handling**: Robust detection of sensor failures and disconnections
@@ -169,8 +170,30 @@ Enable by sending `LVON` command for CSV output:
 | `CSV` | Same as LVON | Alternative command |
 | `LVOFF` | Disable LabVIEW mode | Return to human-readable format |
 | `HUMAN` | Same as LVOFF | Alternative command |
+| `VISA` | Enable VISA mode | SCPI command-response for instruments |
+| `VSON` | Same as VISA | Alternative command |
 | `CAL` | Calibration mode | Display raw readings for calibration |
 | `EXIT` | Exit current mode | Return to previous operating mode |
+
+### Operation Modes
+
+#### 1. Human-Readable Mode (Default)
+- Displays temperature readings in a user-friendly format
+- Updates every 2 seconds
+- Includes sensor labels and units
+
+#### 2. LabVIEW Mode
+- Outputs comma-separated values (CSV) format
+- Updates every 1 second
+- Optimized for data acquisition systems
+- Error values shown as `-999.0`
+
+#### 3. VISA Command-Response Mode (NEW)
+- SCPI-compliant instrument behavior
+- Query-based temperature readings
+- Full command set for automated testing
+- Professional instrumentation compatibility
+- See [VISA Command Guide](VISA_COMMAND_GUIDE.md) for details
 
 ## Calibration
 
