@@ -43,8 +43,8 @@ MAX6675 thermocouple8(thermoCLK, thermoCS8, thermoDO);  // Sensor 8
 
 // Calibration mode flag
 bool calibrationMode = false;
-bool labviewMode = true;  // Flag for LabVIEW output format
-bool visaMode = false;    // Flag for VISA command-response mode
+bool labviewMode = false;  // Flag for LabVIEW output format
+bool visaMode = true;      // Flag for VISA command-response mode (DEFAULT)
 
 // VISA command buffer
 String commandBuffer = "";
@@ -516,6 +516,8 @@ void setup() {
   Serial.print("Sensor 6: "); Serial.print(calibrationOffset6); Serial.println("°C");
   Serial.print("Sensor 7: "); Serial.print(calibrationOffset7); Serial.println("°C");
   Serial.print("Sensor 8: "); Serial.print(calibrationOffset8); Serial.println("°C");
+  Serial.println("\n=== DEFAULT MODE: VISA Command-Response ===");
+  Serial.println("Send '*IDN?' to identify device or 'HELP?' for commands");
   Serial.println("\nAvailable Commands:");
   Serial.println("  CAL    - Enter calibration mode");
   Serial.println("  EXIT   - Exit current mode");
