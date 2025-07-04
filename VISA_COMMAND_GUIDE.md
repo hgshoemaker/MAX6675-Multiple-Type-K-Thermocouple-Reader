@@ -35,11 +35,15 @@ VISA Write: "VSON\n"
 #### Measurement Commands
 | Command | Description | Response Example |
 |---------|-------------|------------------|
-| `MEAS:TEMP? ALL` | Read all 8 temperatures | `23.50,24.10,22.75,25.00,23.25,24.50,23.00,24.75` |
-| `MEAS:TEMP? CH1` | Read channel 1 temperature | `23.50` |
-| `MEAS:TEMP? CH2` | Read channel 2 temperature | `24.10` |
+| `MEAS:TEMP? ALL` | Read all 8 temperatures (calibrated) | `23.50,24.10,22.75,25.00,23.25,24.50,23.00,24.75` |
+| `MEAS:TEMP? CH1` | Read channel 1 temperature (calibrated) | `23.50` |
+| `MEAS:TEMP? CH2` | Read channel 2 temperature (calibrated) | `24.10` |
 | ... | ... | ... |
-| `MEAS:TEMP? CH8` | Read channel 8 temperature | `24.75` |
+| `MEAS:TEMP? CH8` | Read channel 8 temperature (calibrated) | `24.75` |
+| `MEAS:TEMP:RAW? ALL` | Read all 8 temperatures (raw/uncalibrated) | `23.75,24.35,23.00,25.25,23.50,24.75,23.25,25.00` |
+| `MEAS:TEMP:RAW? CH1` | Read channel 1 temperature (raw/uncalibrated) | `23.75` |
+| ... | ... | ... |
+| `MEAS:TEMP:RAW? CH8` | Read channel 8 temperature (raw/uncalibrated) | `25.00` |
 
 #### Configuration Commands
 | Command | Description | Response Example |
@@ -62,12 +66,14 @@ VISA Write: "VSON\n"
 ## Error Handling
 
 ### Temperature Error Values
-- Disconnected or faulty sensors return: `-999.0`
-- NaN values are converted to `-999.0` for consistency
+- Disconnected or faulty sensors return: `-999.00`
+- All temperature values are formatted with exactly 2 decimal places
+- CSV format maintains consistent spacing and formatting
 
 ### Command Errors
 - Unknown commands return: `ERROR: Unknown command`
-- Invalid channel numbers are ignored
+- Invalid channel numbers return: `ERROR: Invalid channel number (1-8)`
+- Channel numbers must be between 1 and 8 inclusive
 
 ### System Errors
 - `SYST:ERR?` always returns `0,"No error"` (simple implementation)
@@ -107,21 +113,28 @@ VISA Write: "MEAS:TEMP? ALL\n"
 VISA Read: "23.50,24.10,22.75,25.00,23.25,24.50,23.00,24.75"
 ```
 
-#### 5. Parse Data
+#### 5. Read Raw (Uncalibrated) Temperatures
+```
+VISA Write: "MEAS:TEMP:RAW? ALL\n"
+VISA Read: "23.75,24.35,23.00,25.25,23.50,24.75,23.25,25.00"
+```
+
+#### 6. Parse Data
 ```
 String Split (delimiter: ",") → String to Number Array
 ```
 
-#### 6. Read Individual Channel
+#### 7. Read Individual Channel
 ```
 VISA Write: "MEAS:TEMP? CH1\n"
 VISA Read: "23.50"
 ```
 
 ### Error Handling in LabVIEW
-- Check for `-999.0` values to detect sensor errors
+- Check for `-999.00` values to detect sensor errors
 - Implement timeout handling for VISA operations
 - Use error clusters to handle communication errors
+- Validate channel numbers (1-8) before sending queries
 
 ## Command Timing
 
@@ -159,8 +172,14 @@ MAX6675_THERMOCOUPLE_READER,v1.0,SN001
 > MEAS:TEMP? ALL
 23.50,24.10,22.75,25.00,23.25,24.50,23.00,24.75
 
+> MEAS:TEMP:RAW? ALL
+23.75,24.35,23.00,25.25,23.50,24.75,23.25,25.00
+
 > MEAS:TEMP? CH1
 23.50
+
+> MEAS:TEMP? CH99
+ERROR: Invalid channel number (1-8)
 
 > CONF:SENS:COUN?
 8

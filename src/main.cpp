@@ -304,14 +304,22 @@ void processVisaCommand(String command) {
     float temp7C = readCalibratedCelsius(thermocouple7, calibrationOffset7);
     float temp8C = readCalibratedCelsius(thermocouple8, calibrationOffset8);
     
-    Serial.print(isnan(temp1C) ? -999.0 : temp1C, 2); Serial.print(",");
-    Serial.print(isnan(temp2C) ? -999.0 : temp2C, 2); Serial.print(",");
-    Serial.print(isnan(temp3C) ? -999.0 : temp3C, 2); Serial.print(",");
-    Serial.print(isnan(temp4C) ? -999.0 : temp4C, 2); Serial.print(",");
-    Serial.print(isnan(temp5C) ? -999.0 : temp5C, 2); Serial.print(",");
-    Serial.print(isnan(temp6C) ? -999.0 : temp6C, 2); Serial.print(",");
-    Serial.print(isnan(temp7C) ? -999.0 : temp7C, 2); Serial.print(",");
-    Serial.print(isnan(temp8C) ? -999.0 : temp8C, 2);
+    // Format each temperature with exactly 2 decimal places
+    Serial.print(isnan(temp1C) ? "-999.00" : String(temp1C, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp2C) ? "-999.00" : String(temp2C, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp3C) ? "-999.00" : String(temp3C, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp4C) ? "-999.00" : String(temp4C, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp5C) ? "-999.00" : String(temp5C, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp6C) ? "-999.00" : String(temp6C, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp7C) ? "-999.00" : String(temp7C, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp8C) ? "-999.00" : String(temp8C, 2));
     Serial.println();
     return;
   }
@@ -331,7 +339,15 @@ void processVisaCommand(String command) {
         case 7: temp = readCalibratedCelsius(thermocouple7, calibrationOffset7); break;
         case 8: temp = readCalibratedCelsius(thermocouple8, calibrationOffset8); break;
       }
-      Serial.println(isnan(temp) ? -999.0 : temp, 2);
+      // Format with exactly 2 decimal places
+      if (isnan(temp)) {
+        Serial.println("-999.00");
+      } else {
+        Serial.println(String(temp, 2));
+      }
+      return;
+    } else {
+      Serial.println("ERROR: Invalid channel number (1-8)");
       return;
     }
   }
@@ -356,6 +372,64 @@ void processVisaCommand(String command) {
   if (command == "CONF:RATE?") {
     Serial.println("1.0");  // 1 Hz update rate
     return;
+  }
+  
+  // Raw temperature measurement queries (uncalibrated)
+  if (command == "MEAS:TEMP:RAW? ALL") {
+    // Return all raw temperatures (no calibration offset)
+    double temp1 = thermocouple1.readCelsius();
+    double temp2 = thermocouple2.readCelsius();
+    double temp3 = thermocouple3.readCelsius();
+    double temp4 = thermocouple4.readCelsius();
+    double temp5 = thermocouple5.readCelsius();
+    double temp6 = thermocouple6.readCelsius();
+    double temp7 = thermocouple7.readCelsius();
+    double temp8 = thermocouple8.readCelsius();
+    
+    Serial.print(isnan(temp1) ? "-999.00" : String(temp1, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp2) ? "-999.00" : String(temp2, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp3) ? "-999.00" : String(temp3, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp4) ? "-999.00" : String(temp4, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp5) ? "-999.00" : String(temp5, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp6) ? "-999.00" : String(temp6, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp7) ? "-999.00" : String(temp7, 2));
+    Serial.print(",");
+    Serial.print(isnan(temp8) ? "-999.00" : String(temp8, 2));
+    Serial.println();
+    return;
+  }
+  
+  // Individual raw sensor queries
+  if (command.startsWith("MEAS:TEMP:RAW? CH")) {
+    int channel = command.substring(18).toInt();
+    if (channel >= 1 && channel <= 8) {
+      double temp = NAN;
+      switch(channel) {
+        case 1: temp = thermocouple1.readCelsius(); break;
+        case 2: temp = thermocouple2.readCelsius(); break;
+        case 3: temp = thermocouple3.readCelsius(); break;
+        case 4: temp = thermocouple4.readCelsius(); break;
+        case 5: temp = thermocouple5.readCelsius(); break;
+        case 6: temp = thermocouple6.readCelsius(); break;
+        case 7: temp = thermocouple7.readCelsius(); break;
+        case 8: temp = thermocouple8.readCelsius(); break;
+      }
+      if (isnan(temp)) {
+        Serial.println("-999.00");
+      } else {
+        Serial.println(String(temp, 2));
+      }
+      return;
+    } else {
+      Serial.println("ERROR: Invalid channel number (1-8)");
+      return;
+    }
   }
   
   // Mode control
@@ -388,8 +462,10 @@ void processVisaCommand(String command) {
     Serial.println("Available VISA Commands:");
     Serial.println("*IDN? - Instrument identification");
     Serial.println("*RST - Reset to VISA mode");
-    Serial.println("MEAS:TEMP? ALL - Read all temperatures");
-    Serial.println("MEAS:TEMP? CH<n> - Read channel n (1-8)");
+    Serial.println("MEAS:TEMP? ALL - Read all temperatures (calibrated)");
+    Serial.println("MEAS:TEMP? CH<n> - Read channel n (1-8, calibrated)");
+    Serial.println("MEAS:TEMP:RAW? ALL - Read all temperatures (raw)");
+    Serial.println("MEAS:TEMP:RAW? CH<n> - Read channel n (1-8, raw)");
     Serial.println("SYST:ERR? - System error query");
     Serial.println("SYST:VERS? - System version");
     Serial.println("CONF:SENS:COUN? - Sensor count");

@@ -66,33 +66,52 @@ def main():
         # Test temperature readings
         print("\n=== TEMPERATURE READINGS ===")
         
-        # Read all temperatures
+        # Read all temperatures (calibrated)
         all_temps = send_command(ser, "MEAS:TEMP? ALL")
-        print(f"All Temperatures (CSV): {all_temps}")
+        print(f"All Temperatures - Calibrated (CSV): {all_temps}")
+        
+        # Read all temperatures (raw)
+        all_temps_raw = send_command(ser, "MEAS:TEMP:RAW? ALL")
+        print(f"All Temperatures - Raw (CSV): {all_temps_raw}")
         
         # Parse and display individual temperatures
         temp_values = all_temps.split(',')
+        print("\nCalibrated Temperatures:")
         for i, temp in enumerate(temp_values, 1):
-            temp_float = float(temp)
-            if temp_float == -999.0:
+            temp_str = temp.strip()
+            if temp_str == "-999.00":
                 print(f"  Channel {i}: ERROR (sensor disconnected)")
             else:
-                print(f"  Channel {i}: {temp_float}°C")
+                print(f"  Channel {i}: {temp_str}°C")
+        
+        # Parse and display raw temperatures
+        temp_values_raw = all_temps_raw.split(',')
+        print("\nRaw Temperatures:")
+        for i, temp in enumerate(temp_values_raw, 1):
+            temp_str = temp.strip()
+            if temp_str == "-999.00":
+                print(f"  Channel {i}: ERROR (sensor disconnected)")
+            else:
+                print(f"  Channel {i}: {temp_str}°C")
         
         # Test individual channel readings
         print("\n=== INDIVIDUAL CHANNEL READINGS ===")
         for channel in range(1, 4):  # Test first 3 channels
+            # Calibrated reading
             temp = send_command(ser, f"MEAS:TEMP? CH{channel}")
-            temp_float = float(temp)
-            if temp_float == -999.0:
-                print(f"Channel {channel}: ERROR (sensor disconnected)")
-            else:
-                print(f"Channel {channel}: {temp_float}°C")
+            print(f"Channel {channel} (Calibrated): {temp}°C")
+            
+            # Raw reading
+            temp_raw = send_command(ser, f"MEAS:TEMP:RAW? CH{channel}")
+            print(f"Channel {channel} (Raw): {temp_raw}°C")
         
-        # Test error handling
+        # Test invalid channel
         print("\n=== ERROR HANDLING TEST ===")
-        error_response = send_command(ser, "INVALID_COMMAND")
-        print(f"Invalid Command Response: {error_response}")
+        invalid_channel = send_command(ser, "MEAS:TEMP? CH99")
+        print(f"Invalid Channel Response: {invalid_channel}")
+        
+        unknown_command = send_command(ser, "INVALID_COMMAND")
+        print(f"Unknown Command Response: {unknown_command}")
         
         # Test system error query
         sys_error = send_command(ser, "SYST:ERR?")
