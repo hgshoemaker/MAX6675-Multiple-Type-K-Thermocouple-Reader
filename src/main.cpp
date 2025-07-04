@@ -433,7 +433,7 @@ void processVisaCommand(String command) {
   }
   
   // Mode control
-  if (command == "MODE:VISA") {
+  if (command == "MODE:VISA" || command == "VISA" || command == "VSON") {
     visaMode = true;
     labviewMode = false;
     calibrationMode = false;
@@ -441,7 +441,7 @@ void processVisaCommand(String command) {
     return;
   }
   
-  if (command == "MODE:LABVIEW") {
+  if (command == "MODE:LABVIEW" || command == "LABVIEW" || command == "LVON" || command == "CSV") {
     visaMode = false;
     labviewMode = true;
     calibrationMode = false;
@@ -449,11 +449,27 @@ void processVisaCommand(String command) {
     return;
   }
   
-  if (command == "MODE:HUMAN") {
+  if (command == "MODE:HUMAN" || command == "HUMAN" || command == "LVOFF") {
     visaMode = false;
     labviewMode = false;
     calibrationMode = false;
     Serial.println("OK");
+    return;
+  }
+  
+  if (command == "MODE:CAL" || command == "CAL") {
+    visaMode = false;
+    labviewMode = false;
+    calibrationMode = true;
+    Serial.println("OK");
+    return;
+  }
+  
+  if (command == "EXIT") {
+    calibrationMode = false;
+    labviewMode = false;
+    visaMode = false;
+    Serial.println("OK - Exiting to human mode");
     return;
   }
   
@@ -470,9 +486,11 @@ void processVisaCommand(String command) {
     Serial.println("SYST:VERS? - System version");
     Serial.println("CONF:SENS:COUN? - Sensor count");
     Serial.println("CONF:RATE? - Update rate");
-    Serial.println("MODE:VISA - Enable VISA mode");
-    Serial.println("MODE:LABVIEW - Enable LabVIEW mode");
-    Serial.println("MODE:HUMAN - Enable human mode");
+    Serial.println("MODE:VISA, VISA, VSON - Enable VISA mode");
+    Serial.println("MODE:LABVIEW, LABVIEW, LVON, CSV - Enable LabVIEW mode");
+    Serial.println("MODE:HUMAN, HUMAN, LVOFF - Enable human mode");
+    Serial.println("MODE:CAL, CAL - Enter calibration mode");
+    Serial.println("EXIT - Exit to human mode");
     Serial.println("HELP? - This help message");
     return;
   }
