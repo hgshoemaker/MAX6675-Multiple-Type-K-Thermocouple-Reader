@@ -209,21 +209,21 @@ void displayCalibrationReadings() {
 
 // Function to output data in LabVIEW-compatible format (Celsius only)
 void outputLabVIEWFormat() {
-  // Read all sensors with delays between readings for stability
+  // Read all sensors with longer delays between readings for stability
   float temp1C = readCalibratedCelsius(thermocouple1, calibrationOffset1);
-  delay(100);  // Wait between sensor readings
+  delay(150);  // Increased delay for better stability
   float temp2C = readCalibratedCelsius(thermocouple2, calibrationOffset2);
-  delay(100);
+  delay(150);
   float temp3C = readCalibratedCelsius(thermocouple3, calibrationOffset3);
-  delay(100);
+  delay(150);
   float temp4C = readCalibratedCelsius(thermocouple4, calibrationOffset4);
-  delay(100);
+  delay(150);
   float temp5C = readCalibratedCelsius(thermocouple5, calibrationOffset5);
-  delay(100);
+  delay(150);
   float temp6C = readCalibratedCelsius(thermocouple6, calibrationOffset6);
-  delay(100);
+  delay(150);
   float temp7C = readCalibratedCelsius(thermocouple7, calibrationOffset7);
-  delay(100);
+  delay(150);
   float temp8C = readCalibratedCelsius(thermocouple8, calibrationOffset8);
   
   // Output in CSV format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C
@@ -566,6 +566,7 @@ void setup() {
   Serial.println("Send '*IDN?' to identify device or 'HELP?' for commands");
   Serial.println("\nAvailable Commands:");
   Serial.println("  CAL    - Enter calibration mode");
+  Serial.println("  DEBUG  - Test individual sensors");
   Serial.println("  EXIT   - Exit current mode");
   Serial.println("  LABVIEW - Toggle LabVIEW output format");
   Serial.println("  CSV    - Enable CSV output for LabVIEW");
@@ -592,6 +593,8 @@ void loop() {
     
     if (command == "CAL") {
       enterCalibrationMode();
+    } else if (command == "DEBUG" || command == "TEST") {
+      testIndividualSensors();
     } else if (command == "EXIT") {
       calibrationMode = false;
       labviewMode = false;
@@ -732,4 +735,58 @@ void loop() {
   
   Serial.println(); // Empty line for readability
   delay(2000); // Read every 2 seconds
+}
+
+// Debug function to test individual sensors
+void testIndividualSensors() {
+  Serial.println("=== INDIVIDUAL SENSOR TEST ===");
+  
+  Serial.print("Sensor 1 (Pin 53): ");
+  float temp1 = readCalibratedCelsius(thermocouple1, calibrationOffset1);
+  Serial.print(isnan(temp1) ? "ERROR" : String(temp1, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 2 (Pin 49): ");
+  float temp2 = readCalibratedCelsius(thermocouple2, calibrationOffset2);
+  Serial.print(isnan(temp2) ? "ERROR" : String(temp2, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 3 (Pin 48): ");
+  float temp3 = readCalibratedCelsius(thermocouple3, calibrationOffset3);
+  Serial.print(isnan(temp3) ? "ERROR" : String(temp3, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 4 (Pin 47): ");
+  float temp4 = readCalibratedCelsius(thermocouple4, calibrationOffset4);
+  Serial.print(isnan(temp4) ? "ERROR" : String(temp4, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 5 (Pin 46): ");
+  float temp5 = readCalibratedCelsius(thermocouple5, calibrationOffset5);
+  Serial.print(isnan(temp5) ? "ERROR" : String(temp5, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 6 (Pin 45): ");
+  float temp6 = readCalibratedCelsius(thermocouple6, calibrationOffset6);
+  Serial.print(isnan(temp6) ? "ERROR" : String(temp6, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 7 (Pin 44): ");
+  float temp7 = readCalibratedCelsius(thermocouple7, calibrationOffset7);
+  Serial.print(isnan(temp7) ? "ERROR" : String(temp7, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 8 (Pin 43): ");
+  float temp8 = readCalibratedCelsius(thermocouple8, calibrationOffset8);
+  Serial.print(isnan(temp8) ? "ERROR" : String(temp8, 2) + "°C");
+  Serial.println();
+  
+  Serial.println("===================================");
 }

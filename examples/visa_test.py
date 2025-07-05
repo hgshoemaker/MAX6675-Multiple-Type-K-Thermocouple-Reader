@@ -2,7 +2,26 @@
 MAX6675 Serial Communication Test Script
 
 This Python script demonstrates how to communicate with the MAX6675 
-thermocouple reader using the actual implemented commands.
+thermocouple reader us        # Test 5: Return to human mode
+        print("\n=== RETURNING TO HUMAN MODE ===")
+        send_command(ser, "EXIT")
+        time.sleep(2)
+        
+        # Read a few lines to confirm
+        for i in range(5):
+            if ser.in_waiting > 0:
+                line = ser.readline().decode().strip()
+                if line:
+                    print(f"  {line}")
+        
+        # Test 6: Command summary
+        print("\n=== AVAILABLE COMMANDS ===")
+        print("Commands that work with your Arduino:")
+        print("  LVON / LABVIEW / CSV  - Enable CSV output mode")
+        print("  LVOFF / HUMAN         - Enable human-readable mode")
+        print("  CAL                   - Enter calibration mode")
+        print("  DEBUG                 - Test individual sensors")
+        print("  EXIT                  - Exit current mode")emented commands.
 
 Requirements:
 - pyserial library: pip install pyserial
@@ -86,19 +105,43 @@ def main():
             print(f"\nParsed {len(csv_lines)} CSV readings:")
             latest_csv = csv_lines[-1]
             temps = latest_csv.split(',')
+            print(f"Raw CSV data: {latest_csv}")
+            print(f"Number of temperature values: {len(temps)}")
+            
             for i, temp in enumerate(temps, 1):
                 try:
-                    temp_val = float(temp)
+                    temp_val = float(temp.strip())
                     if temp_val == -999.0:
                         print(f"  Sensor {i}: ERROR (disconnected)")
+                    elif temp_val < -100 or temp_val > 1000:
+                        print(f"  Sensor {i}: INVALID ({temp_val:.2f}°C - out of range)")
                     else:
                         print(f"  Sensor {i}: {temp_val:.2f}°C")
                 except ValueError:
                     print(f"  Sensor {i}: Invalid data ({temp})")
+            
+            # Show all 8 sensors even if some are missing
+            if len(temps) < 8:
+                print(f"WARNING: Only {len(temps)} sensors detected, expected 8")
+                for i in range(len(temps) + 1, 9):
+                    print(f"  Sensor {i}: NOT DETECTED")
         else:
             print("No CSV data received - check sensor connections")
         
-        # Test 3: Calibration mode
+        # Test 3: Debug individual sensors
+        print("\n=== INDIVIDUAL SENSOR DEBUG ===")
+        send_command(ser, "DEBUG")
+        time.sleep(3)
+        
+        # Read debug data
+        print("Reading individual sensor test results...")
+        for i in range(20):  # Read individual sensor debug output
+            if ser.in_waiting > 0:
+                line = ser.readline().decode().strip()
+                if line:
+                    print(f"  {line}")
+        
+        # Test 4: Calibration mode
         print("\n=== CALIBRATION MODE ===")
         send_command(ser, "CAL")
         time.sleep(3)
@@ -111,7 +154,7 @@ def main():
                 if line:
                     print(f"  {line}")
         
-        # Test 4: Return to human mode
+        # Test 5: Return to human mode
         print("\n=== RETURNING TO HUMAN MODE ===")
         send_command(ser, "EXIT")
         time.sleep(2)
