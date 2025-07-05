@@ -65,19 +65,21 @@ def main():
         # Test 2: Enable LabVIEW CSV mode
         print("\n=== LABVIEW CSV MODE ===")
         send_command(ser, "LVON")
-        time.sleep(2)
+        time.sleep(3)  # Wait longer for mode to stabilize
         
         # Read CSV data
-        print("Reading CSV data for 5 seconds...")
+        print("Reading CSV data for 8 seconds...")
         start_time = time.time()
         csv_lines = []
         
-        while time.time() - start_time < 5:
+        while time.time() - start_time < 8:  # Longer reading time
             if ser.in_waiting > 0:
                 line = ser.readline().decode().strip()
-                if line and ',' in line:  # CSV data line
+                if line and ',' in line and not line.startswith('Format'):  # CSV data line
                     csv_lines.append(line)
                     print(f"  CSV: {line}")
+                elif line:  # Other output
+                    print(f"  Info: {line}")
         
         # Parse CSV data
         if csv_lines:
@@ -85,11 +87,16 @@ def main():
             latest_csv = csv_lines[-1]
             temps = latest_csv.split(',')
             for i, temp in enumerate(temps, 1):
-                temp_val = float(temp)
-                if temp_val == -999.0:
-                    print(f"  Sensor {i}: ERROR (disconnected)")
-                else:
-                    print(f"  Sensor {i}: {temp_val:.2f}°C")
+                try:
+                    temp_val = float(temp)
+                    if temp_val == -999.0:
+                        print(f"  Sensor {i}: ERROR (disconnected)")
+                    else:
+                        print(f"  Sensor {i}: {temp_val:.2f}°C")
+                except ValueError:
+                    print(f"  Sensor {i}: Invalid data ({temp})")
+        else:
+            print("No CSV data received - check sensor connections")
         
         # Test 3: Calibration mode
         print("\n=== CALIBRATION MODE ===")
