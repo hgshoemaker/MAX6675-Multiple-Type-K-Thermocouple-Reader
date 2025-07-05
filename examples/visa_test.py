@@ -1,8 +1,8 @@
 """
-MAX6675 VISA Mode Test Script
+MAX6675 Serial Communication Test Script
 
 This Python script demonstrates how to communicate with the MAX6675 
-thermocouple reader in VISA command-response mode.
+thermocouple reader using the actual implemented commands.
 
 Requirements:
 - pyserial library: pip install pyserial
@@ -18,128 +18,111 @@ import serial
 import time
 
 # Configuration
-COM_PORT = 'COM3'  # Update this to match your Arduino's COM port
+COM_PORT = '/dev/cu.usbmodem1101'  # macOS serial port for Arduino Mega 2560
 BAUD_RATE = 9600
 TIMEOUT = 2.0
 
 def send_command(ser, command):
-    """Send a command and return the response"""
-    # Send command
+    """Send a command to Arduino"""
+    print(f"Sending command: {command}")
     ser.write(f"{command}\n".encode())
-    
-    # Read response
-    response = ser.readline().decode().strip()
-    return response
+    time.sleep(0.5)  # Give Arduino time to process
+
+def read_data(ser, num_lines=1):
+    """Read data from Arduino"""
+    data = []
+    for _ in range(num_lines):
+        if ser.in_waiting > 0:
+            line = ser.readline().decode().strip()
+            if line:
+                data.append(line)
+    return data
 
 def main():
     try:
         # Open serial connection
         print(f"Connecting to {COM_PORT}...")
         ser = serial.Serial(COM_PORT, BAUD_RATE, timeout=TIMEOUT)
-        time.sleep(2)  # Wait for Arduino to initialize
+        time.sleep(3)  # Wait for Arduino to initialize
         
-        print("Connected! Enabling VISA mode...")
+        print("Connected! Testing Arduino commands...")
         
-        # Enable VISA mode
-        response = send_command(ser, "VSON")
-        print(f"VISA Mode Response: {response}")
+        # Clear any initial data
+        ser.flushInput()
         
-        # Wait a moment
-        time.sleep(1)
+        # Test 1: Read normal human-readable output
+        print("\n=== NORMAL MODE (Human-Readable) ===")
+        send_command(ser, "HUMAN")
+        time.sleep(2)
         
-        # Test instrument identification
-        print("\n=== INSTRUMENT IDENTIFICATION ===")
-        idn = send_command(ser, "*IDN?")
-        print(f"Device ID: {idn}")
+        # Read several lines of normal output
+        for i in range(12):  # Read header + 8 sensors + footer
+            if ser.in_waiting > 0:
+                line = ser.readline().decode().strip()
+                if line:
+                    print(f"  {line}")
         
-        # Test system information
-        print("\n=== SYSTEM INFORMATION ===")
-        version = send_command(ser, "SYST:VERS?")
-        print(f"Version: {version}")
+        # Test 2: Enable LabVIEW CSV mode
+        print("\n=== LABVIEW CSV MODE ===")
+        send_command(ser, "LVON")
+        time.sleep(2)
         
-        sensor_count = send_command(ser, "CONF:SENS:COUN?")
-        print(f"Sensor Count: {sensor_count}")
-        
-        update_rate = send_command(ser, "CONF:RATE?")
-        print(f"Update Rate: {update_rate} Hz")
-        
-        # Test temperature readings
-        print("\n=== TEMPERATURE READINGS ===")
-        
-        # Read all temperatures (calibrated)
-        all_temps = send_command(ser, "MEAS:TEMP? ALL")
-        print(f"All Temperatures - Calibrated (CSV): {all_temps}")
-        
-        # Read all temperatures (raw)
-        all_temps_raw = send_command(ser, "MEAS:TEMP:RAW? ALL")
-        print(f"All Temperatures - Raw (CSV): {all_temps_raw}")
-        
-        # Parse and display individual temperatures
-        temp_values = all_temps.split(',')
-        print("\nCalibrated Temperatures:")
-        for i, temp in enumerate(temp_values, 1):
-            temp_str = temp.strip()
-            if temp_str == "-999.00":
-                print(f"  Channel {i}: ERROR (sensor disconnected)")
-            else:
-                print(f"  Channel {i}: {temp_str}°C")
-        
-        # Parse and display raw temperatures
-        temp_values_raw = all_temps_raw.split(',')
-        print("\nRaw Temperatures:")
-        for i, temp in enumerate(temp_values_raw, 1):
-            temp_str = temp.strip()
-            if temp_str == "-999.00":
-                print(f"  Channel {i}: ERROR (sensor disconnected)")
-            else:
-                print(f"  Channel {i}: {temp_str}°C")
-        
-        # Test individual channel readings
-        print("\n=== INDIVIDUAL CHANNEL READINGS ===")
-        for channel in range(1, 4):  # Test first 3 channels
-            # Calibrated reading
-            temp = send_command(ser, f"MEAS:TEMP? CH{channel}")
-            print(f"Channel {channel} (Calibrated): {temp}°C")
-            
-            # Raw reading
-            temp_raw = send_command(ser, f"MEAS:TEMP:RAW? CH{channel}")
-            print(f"Channel {channel} (Raw): {temp_raw}°C")
-        
-        # Test invalid channel
-        print("\n=== ERROR HANDLING TEST ===")
-        invalid_channel = send_command(ser, "MEAS:TEMP? CH99")
-        print(f"Invalid Channel Response: {invalid_channel}")
-        
-        unknown_command = send_command(ser, "INVALID_COMMAND")
-        print(f"Unknown Command Response: {unknown_command}")
-        
-        # Test system error query
-        sys_error = send_command(ser, "SYST:ERR?")
-        print(f"System Error: {sys_error}")
-        
-        # Show help
-        print("\n=== HELP INFORMATION ===")
-        help_info = send_command(ser, "HELP?")
-        print("Available Commands:")
-        print(help_info)
-        
-        # Performance test
-        print("\n=== PERFORMANCE TEST ===")
-        print("Testing response time for 10 measurements...")
+        # Read CSV data
+        print("Reading CSV data for 5 seconds...")
         start_time = time.time()
+        csv_lines = []
         
-        for i in range(10):
-            temp = send_command(ser, "MEAS:TEMP? CH1")
-            print(f"  Measurement {i+1}: {temp}°C")
+        while time.time() - start_time < 5:
+            if ser.in_waiting > 0:
+                line = ser.readline().decode().strip()
+                if line and ',' in line:  # CSV data line
+                    csv_lines.append(line)
+                    print(f"  CSV: {line}")
         
-        end_time = time.time()
-        avg_time = (end_time - start_time) / 10
-        print(f"Average response time: {avg_time:.3f} seconds")
+        # Parse CSV data
+        if csv_lines:
+            print(f"\nParsed {len(csv_lines)} CSV readings:")
+            latest_csv = csv_lines[-1]
+            temps = latest_csv.split(',')
+            for i, temp in enumerate(temps, 1):
+                temp_val = float(temp)
+                if temp_val == -999.0:
+                    print(f"  Sensor {i}: ERROR (disconnected)")
+                else:
+                    print(f"  Sensor {i}: {temp_val:.2f}°C")
         
-        # Return to human mode
+        # Test 3: Calibration mode
+        print("\n=== CALIBRATION MODE ===")
+        send_command(ser, "CAL")
+        time.sleep(3)
+        
+        # Read calibration data
+        print("Reading calibration data...")
+        for i in range(15):  # Read calibration output
+            if ser.in_waiting > 0:
+                line = ser.readline().decode().strip()
+                if line:
+                    print(f"  {line}")
+        
+        # Test 4: Return to human mode
         print("\n=== RETURNING TO HUMAN MODE ===")
-        response = send_command(ser, "MODE:HUMAN")
-        print(f"Mode Change Response: {response}")
+        send_command(ser, "EXIT")
+        time.sleep(2)
+        
+        # Read a few lines to confirm
+        for i in range(5):
+            if ser.in_waiting > 0:
+                line = ser.readline().decode().strip()
+                if line:
+                    print(f"  {line}")
+        
+        # Test 5: Command summary
+        print("\n=== AVAILABLE COMMANDS ===")
+        print("Commands that work with your Arduino:")
+        print("  LVON / LABVIEW / CSV  - Enable CSV output mode")
+        print("  LVOFF / HUMAN         - Enable human-readable mode")
+        print("  CAL                   - Enter calibration mode")
+        print("  EXIT                  - Exit current mode")
         
         print("\nTest completed successfully!")
         
