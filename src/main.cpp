@@ -58,6 +58,9 @@ float applyCalibratedReading(float rawTemp, float offset) {
   return rawTemp + offset;
 }
 
+// Function prototype for testIndividualSensors
+void testIndividualSensors();
+
 // Function to read calibrated temperature
 float readCalibratedCelsius(MAX6675 &sensor, float offset) {
   double rawTemp = sensor.readCelsius();
