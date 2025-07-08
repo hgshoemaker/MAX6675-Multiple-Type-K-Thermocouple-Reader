@@ -281,20 +281,6 @@ void handleVisaSerial() {
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("MAX6675 VISA Thermocouple Interface v2.1");
-  Serial.println("8-Channel Type K Thermocouple Reader - VISA Mode Only");
-  Serial.println("Current calibration offsets:");
-  Serial.print("Sensor 1: "); Serial.print(calibrationOffset1); Serial.println("°C");
-  Serial.print("Sensor 2: "); Serial.print(calibrationOffset2); Serial.println("°C");
-  Serial.print("Sensor 3: "); Serial.print(calibrationOffset3); Serial.println("°C");
-  Serial.print("Sensor 4: "); Serial.print(calibrationOffset4); Serial.println("°C");
-  Serial.print("Sensor 5: "); Serial.print(calibrationOffset5); Serial.println("°C");
-  Serial.print("Sensor 6: "); Serial.print(calibrationOffset6); Serial.println("°C");
-  Serial.print("Sensor 7: "); Serial.print(calibrationOffset7); Serial.println("°C");
-  Serial.print("Sensor 8: "); Serial.print(calibrationOffset8); Serial.println("°C");
-  Serial.println("\n=== VISA Command-Response Mode ===");
-  Serial.println("Send '*IDN?' to identify device or 'HELP?' for all commands");
-  Serial.println("Ready for VISA commands...");
   delay(500); // Wait for MAX6675 to stabilize
 }
 
