@@ -22,14 +22,14 @@ int thermoCS7 = 44;   // Seventh sensor CS
 int thermoCS8 = 43;   // Eighth sensor CS
 
 // Calibration offsets for each sensor (adjust these values)
-float calibrationOffset1 = -0.06;  // Sensor 1 offset in °C
-float calibrationOffset2 = -4.31;  // Sensor 2 offset in °C
-float calibrationOffset3 = -1.81;  // Sensor 3 offset in °C
-float calibrationOffset4 = 0.69;  // Sensor 4 offset in °C
-float calibrationOffset5 = 3.69;  // Sensor 5 offset in °C
+float calibrationOffset1 = 0.0;  // Sensor 1 offset in °C
+float calibrationOffset2 = -0.25;  // Sensor 2 offset in °C
+float calibrationOffset3 = -0.06;  // Sensor 3 offset in °C
+float calibrationOffset4 = -0.69;  // Sensor 4 offset in °C
+float calibrationOffset5 = -0.69;  // Sensor 5 offset in °C
 float calibrationOffset6 = -0.06;  // Sensor 6 offset in °C
 float calibrationOffset7 = -0.31;  // Sensor 7 offset in °C
-float calibrationOffset8 = 2.19;  // Sensor 8 offset in °C
+float calibrationOffset8 = -0.19;  // Sensor 8 offset in °C
 
 // Create multiple MAX6675 objects
 MAX6675 thermocouple1(thermoCLK, thermoCS1, thermoDO);  // Sensor 1
@@ -43,8 +43,8 @@ MAX6675 thermocouple8(thermoCLK, thermoCS8, thermoDO);  // Sensor 8
 
 // Calibration mode flag
 bool calibrationMode = false;
-bool labviewMode = false;  // Flag for LabVIEW output format
-bool visaMode = true;      // Flag for VISA command-response mode (DEFAULT)
+bool labviewMode = true;  // Flag for LabVIEW output format
+bool visaMode = false;      // Flag for VISA command-response mode (DEFAULT)
 
 // VISA command buffer
 String commandBuffer = "";
@@ -554,7 +554,7 @@ void handleVisaSerial() {
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("MAX6675 Multiple Type K Thermocouple Test");
+  /*Serial.println("MAX6675 Multiple Type K Thermocouple Test");
   Serial.println("Reading from 8 sensors...");
   Serial.println("Current calibration offsets:");
   Serial.print("Sensor 1: "); Serial.print(calibrationOffset1); Serial.println("°C");
@@ -577,7 +577,7 @@ void setup() {
   Serial.println("  HUMAN  - Enable human-readable output");
   Serial.println("  VISA   - Enable VISA command-response mode");
   Serial.println("  VSON   - Enable VISA mode (alias)");
-  Serial.println("Waiting for MAX6675 sensors to stabilize...");
+  Serial.println("Waiting for MAX6675 sensors to stabilize..."); */
   delay(500); // Wait for MAX6675 to stabilize
 }
 
