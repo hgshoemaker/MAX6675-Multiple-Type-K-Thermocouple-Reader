@@ -1,5 +1,10 @@
 #include <Arduino.h>
 #include "max6675.h"
+#include <Wire.h>
+#include <Adafruit_ADS1015.h>
+
+// ADS1115 ADC setup
+Adafruit_ADS1115 ads;  // Create ADS1115 object (default I2C address 0x48)
 
 // MAX6675 pin connections - All sensors share SCK and MISO
 // VCC -> 5V (all sensors)
@@ -20,6 +25,44 @@ int thermoCS5 = 46;   // Fifth sensor CS
 int thermoCS6 = 45;   // Sixth sensor CS
 int thermoCS7 = 44;   // Seventh sensor CS
 int thermoCS8 = 43;   // Eighth sensor CS
+
+// Relay control pins (D2-D9)
+int relay1Pin = 2;    // Relay 1 on pin D2
+int relay2Pin = 3;    // Relay 2 on pin D3
+int relay3Pin = 4;    // Relay 3 on pin D4
+int relay4Pin = 5;    // Relay 4 on pin D5
+int relay5Pin = 6;    // Relay 5 on pin D6
+int relay6Pin = 7;    // Relay 6 on pin D7
+int relay7Pin = 8;    // Relay 7 on pin D8
+int relay8Pin = 9;    // Relay 8 on pin D9
+
+// Relay states (false = OFF, true = ON)
+bool relay1State = false;
+bool relay2State = false;
+bool relay3State = false;
+bool relay4State = false;
+bool relay5State = false;
+bool relay6State = false;
+bool relay7State = false;
+bool relay8State = false;
+
+// ADS1115 ADC configuration
+// The ADS1115 has 4 channels: A0, A1, A2, A3
+// Default I2C address is 0x48
+// Gain setting affects measurement range:
+//   GAIN_TWOTHIRDS  +/- 6.144V  1 bit = 0.1875mV (default)
+//   GAIN_ONE        +/- 4.096V  1 bit = 0.125mV
+//   GAIN_TWO        +/- 2.048V  1 bit = 0.0625mV
+//   GAIN_FOUR       +/- 1.024V  1 bit = 0.03125mV
+//   GAIN_EIGHT      +/- 0.512V  1 bit = 0.015625mV
+//   GAIN_SIXTEEN    +/- 0.256V  1 bit = 0.0078125mV
+adsGain_t adsGain = GAIN_TWOTHIRDS;  // +/- 6.144V range
+
+// ADS1115 calibration offsets for each channel (adjust these values)
+float voltageOffset1 = 0.0;  // Channel A0 offset in V
+float voltageOffset2 = 0.0;  // Channel A1 offset in V
+float voltageOffset3 = 0.0;  // Channel A2 offset in V
+float voltageOffset4 = 0.0;  // Channel A3 offset in V
 
 // Calibration offsets for each sensor (adjust these values)
 float calibrationOffset1 = 0.0;  // Sensor 1 offset in °C
@@ -43,8 +86,8 @@ MAX6675 thermocouple8(thermoCLK, thermoCS8, thermoDO);  // Sensor 8
 
 // Calibration mode flag
 bool calibrationMode = false;
-bool labviewMode = false;  // Flag for LabVIEW output format
-bool visaMode = true;      // Flag for VISA command-response mode (DEFAULT)
+bool labviewMode = true;   // Flag for LabVIEW output format (DEFAULT - CSV mode)
+bool visaMode = false;     // Flag for VISA command-response mode
 
 // VISA command buffer
 String commandBuffer = "";
@@ -65,6 +108,133 @@ float readCalibratedCelsius(MAX6675 &sensor, float offset) {
     return NAN;
   }
   return applyCalibratedReading(rawTemp, offset);
+}
+
+// Function to read voltage from ADS1115 channel
+float readVoltage(int channel) {
+  if (channel < 0 || channel > 3) {
+    return NAN;  // Invalid channel
+  }
+  
+  int16_t adc = 0;
+  switch (channel) {
+    case 0: adc = ads.readADC_SingleEnded(0); break;
+    case 1: adc = ads.readADC_SingleEnded(1); break;
+    case 2: adc = ads.readADC_SingleEnded(2); break;
+    case 3: adc = ads.readADC_SingleEnded(3); break;
+  }
+  
+  // Convert ADC reading to voltage based on gain setting
+  float voltage = 0.0;
+  switch (adsGain) {
+    case GAIN_TWOTHIRDS: voltage = adc * 0.1875 / 1000.0; break;  // 0.1875mV per bit
+    case GAIN_ONE:       voltage = adc * 0.125 / 1000.0; break;   // 0.125mV per bit
+    case GAIN_TWO:       voltage = adc * 0.0625 / 1000.0; break;  // 0.0625mV per bit
+    case GAIN_FOUR:      voltage = adc * 0.03125 / 1000.0; break; // 0.03125mV per bit
+    case GAIN_EIGHT:     voltage = adc * 0.015625 / 1000.0; break;// 0.015625mV per bit
+    case GAIN_SIXTEEN:   voltage = adc * 0.0078125 / 1000.0; break;// 0.0078125mV per bit
+    default:             voltage = adc * 0.1875 / 1000.0; break;  // Default to GAIN_TWOTHIRDS
+  }
+  
+  return voltage;
+}
+
+// Function to read calibrated voltage
+float readCalibratedVoltage(int channel, float offset) {
+  float rawVoltage = readVoltage(channel);
+  if (isnan(rawVoltage)) {
+    return NAN;
+  }
+  return rawVoltage + offset;
+}
+
+// Function to initialize ADS1115
+void initializeADS1115() {
+  if (!ads.begin()) {
+    Serial.println("Failed to initialize ADS1115!");
+    return;
+  }
+  ads.setGain(adsGain);
+  Serial.println("ADS1115 initialized successfully");
+}
+
+// Function to initialize relay pins
+void initializeRelays() {
+  pinMode(relay1Pin, OUTPUT);
+  pinMode(relay2Pin, OUTPUT);
+  pinMode(relay3Pin, OUTPUT);
+  pinMode(relay4Pin, OUTPUT);
+  pinMode(relay5Pin, OUTPUT);
+  pinMode(relay6Pin, OUTPUT);
+  pinMode(relay7Pin, OUTPUT);
+  pinMode(relay8Pin, OUTPUT);
+  
+  // Set all relays to OFF initially
+  digitalWrite(relay1Pin, LOW);
+  digitalWrite(relay2Pin, LOW);
+  digitalWrite(relay3Pin, LOW);
+  digitalWrite(relay4Pin, LOW);
+  digitalWrite(relay5Pin, LOW);
+  digitalWrite(relay6Pin, LOW);
+  digitalWrite(relay7Pin, LOW);
+  digitalWrite(relay8Pin, LOW);
+}
+
+// Function to set relay state
+void setRelayState(int relayNumber, bool state) {
+  int pin = 0;
+  bool* relayState = nullptr;
+  
+  switch(relayNumber) {
+    case 1: pin = relay1Pin; relayState = &relay1State; break;
+    case 2: pin = relay2Pin; relayState = &relay2State; break;
+    case 3: pin = relay3Pin; relayState = &relay3State; break;
+    case 4: pin = relay4Pin; relayState = &relay4State; break;
+    case 5: pin = relay5Pin; relayState = &relay5State; break;
+    case 6: pin = relay6Pin; relayState = &relay6State; break;
+    case 7: pin = relay7Pin; relayState = &relay7State; break;
+    case 8: pin = relay8Pin; relayState = &relay8State; break;
+    default: return; // Invalid relay number
+  }
+  
+  *relayState = state;
+  digitalWrite(pin, state ? HIGH : LOW);
+}
+
+// Function to get relay state
+bool getRelayState(int relayNumber) {
+  switch(relayNumber) {
+    case 1: return relay1State;
+    case 2: return relay2State;
+    case 3: return relay3State;
+    case 4: return relay4State;
+    case 5: return relay5State;
+    case 6: return relay6State;
+    case 7: return relay7State;
+    case 8: return relay8State;
+    default: return false; // Invalid relay number
+  }
+}
+
+// Function to set all relays to a specific state
+void setAllRelays(bool state) {
+  for(int i = 1; i <= 8; i++) {
+    setRelayState(i, state);
+  }
+}
+
+// Function to display relay status
+void displayRelayStatus() {
+  Serial.println("=== RELAY STATUS ===");
+  for(int i = 1; i <= 8; i++) {
+    Serial.print("Relay ");
+    Serial.print(i);
+    Serial.print(" (D");
+    Serial.print(i + 1);
+    Serial.print("): ");
+    Serial.println(getRelayState(i) ? "ON" : "OFF");
+  }
+  Serial.println("====================");
 }
 
 
@@ -212,7 +382,13 @@ void outputLabVIEWFormat() {
   float temp7C = readCalibratedCelsius(thermocouple7, calibrationOffset7);
   float temp8C = readCalibratedCelsius(thermocouple8, calibrationOffset8);
   
-  // Output in CSV format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C
+  // Read all voltage channels
+  float voltage1 = readCalibratedVoltage(0, voltageOffset1);
+  float voltage2 = readCalibratedVoltage(1, voltageOffset2);
+  float voltage3 = readCalibratedVoltage(2, voltageOffset3);
+  float voltage4 = readCalibratedVoltage(3, voltageOffset4);
+  
+  // Output in CSV format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C,V1,V2,V3,V4
   Serial.print(isnan(temp1C) ? -999.0 : temp1C, 2); Serial.print(",");
   Serial.print(isnan(temp2C) ? -999.0 : temp2C, 2); Serial.print(",");
   Serial.print(isnan(temp3C) ? -999.0 : temp3C, 2); Serial.print(",");
@@ -220,7 +396,11 @@ void outputLabVIEWFormat() {
   Serial.print(isnan(temp5C) ? -999.0 : temp5C, 2); Serial.print(",");
   Serial.print(isnan(temp6C) ? -999.0 : temp6C, 2); Serial.print(",");
   Serial.print(isnan(temp7C) ? -999.0 : temp7C, 2); Serial.print(",");
-  Serial.print(isnan(temp8C) ? -999.0 : temp8C, 2);
+  Serial.print(isnan(temp8C) ? -999.0 : temp8C, 2); Serial.print(",");
+  Serial.print(isnan(voltage1) ? -999.0 : voltage1, 4); Serial.print(",");
+  Serial.print(isnan(voltage2) ? -999.0 : voltage2, 4); Serial.print(",");
+  Serial.print(isnan(voltage3) ? -999.0 : voltage3, 4); Serial.print(",");
+  Serial.print(isnan(voltage4) ? -999.0 : voltage4, 4);
   Serial.println(); // End line
 }
 
@@ -236,6 +416,11 @@ void outputJSONFormat() {
   float temp6C = readCalibratedCelsius(thermocouple6, calibrationOffset6);
   float temp7C = readCalibratedCelsius(thermocouple7, calibrationOffset7);
   float temp8C = readCalibratedCelsius(thermocouple8, calibrationOffset8);
+  
+  float voltage1 = readCalibratedVoltage(0, voltageOffset1);
+  float voltage2 = readCalibratedVoltage(1, voltageOffset2);
+  float voltage3 = readCalibratedVoltage(2, voltageOffset3);
+  float voltage4 = readCalibratedVoltage(3, voltageOffset4);
   
   Serial.print("\"sensor1\":{\"celsius\":");
   Serial.print(isnan(temp1C) ? -999.0 : temp1C, 2);
@@ -267,6 +452,22 @@ void outputJSONFormat() {
   
   Serial.print("\"sensor8\":{\"celsius\":");
   Serial.print(isnan(temp8C) ? -999.0 : temp8C, 2);
+  Serial.print("},");
+  
+  Serial.print("\"voltage1\":{\"volts\":");
+  Serial.print(isnan(voltage1) ? -999.0 : voltage1, 4);
+  Serial.print("},");
+  
+  Serial.print("\"voltage2\":{\"volts\":");
+  Serial.print(isnan(voltage2) ? -999.0 : voltage2, 4);
+  Serial.print("},");
+  
+  Serial.print("\"voltage3\":{\"volts\":");
+  Serial.print(isnan(voltage3) ? -999.0 : voltage3, 4);
+  Serial.print("},");
+  
+  Serial.print("\"voltage4\":{\"volts\":");
+  Serial.print(isnan(voltage4) ? -999.0 : voltage4, 4);
   Serial.print("}");
   
   Serial.println("}");
@@ -352,6 +553,82 @@ void processVisaCommand(String command) {
     }
   }
   
+  // Voltage measurement queries
+  if (command == "MEAS:VOLT? ALL") {
+    // Return all voltages in CSV format
+    float voltage1 = readCalibratedVoltage(0, voltageOffset1);
+    float voltage2 = readCalibratedVoltage(1, voltageOffset2);
+    float voltage3 = readCalibratedVoltage(2, voltageOffset3);
+    float voltage4 = readCalibratedVoltage(3, voltageOffset4);
+    
+    // Format each voltage with exactly 4 decimal places
+    Serial.print(isnan(voltage1) ? "-999.0000" : String(voltage1, 4));
+    Serial.print(",");
+    Serial.print(isnan(voltage2) ? "-999.0000" : String(voltage2, 4));
+    Serial.print(",");
+    Serial.print(isnan(voltage3) ? "-999.0000" : String(voltage3, 4));
+    Serial.print(",");
+    Serial.print(isnan(voltage4) ? "-999.0000" : String(voltage4, 4));
+    Serial.println();
+    return;
+  }
+  
+  // Individual voltage channel queries
+  if (command.startsWith("MEAS:VOLT? CH")) {
+    int channel = command.substring(13).toInt();
+    if (channel >= 1 && channel <= 4) {
+      float voltage = readCalibratedVoltage(channel - 1, 
+        (channel == 1) ? voltageOffset1 :
+        (channel == 2) ? voltageOffset2 :
+        (channel == 3) ? voltageOffset3 : voltageOffset4);
+      
+      // Format with exactly 4 decimal places
+      if (isnan(voltage)) {
+        Serial.println("-999.0000");
+      } else {
+        Serial.println(String(voltage, 4));
+      }
+      return;
+    } else {
+      Serial.println("ERROR: Invalid voltage channel number (1-4)");
+      return;
+    }
+  }
+  
+  // Combined temperature and voltage measurement
+  if (command == "MEAS:ALL?") {
+    // Return all temperatures and voltages in CSV format
+    float temp1C = readCalibratedCelsius(thermocouple1, calibrationOffset1);
+    float temp2C = readCalibratedCelsius(thermocouple2, calibrationOffset2);
+    float temp3C = readCalibratedCelsius(thermocouple3, calibrationOffset3);
+    float temp4C = readCalibratedCelsius(thermocouple4, calibrationOffset4);
+    float temp5C = readCalibratedCelsius(thermocouple5, calibrationOffset5);
+    float temp6C = readCalibratedCelsius(thermocouple6, calibrationOffset6);
+    float temp7C = readCalibratedCelsius(thermocouple7, calibrationOffset7);
+    float temp8C = readCalibratedCelsius(thermocouple8, calibrationOffset8);
+    
+    float voltage1 = readCalibratedVoltage(0, voltageOffset1);
+    float voltage2 = readCalibratedVoltage(1, voltageOffset2);
+    float voltage3 = readCalibratedVoltage(2, voltageOffset3);
+    float voltage4 = readCalibratedVoltage(3, voltageOffset4);
+    
+    // Format: T1,T2,T3,T4,T5,T6,T7,T8,V1,V2,V3,V4
+    Serial.print(isnan(temp1C) ? "-999.00" : String(temp1C, 2)); Serial.print(",");
+    Serial.print(isnan(temp2C) ? "-999.00" : String(temp2C, 2)); Serial.print(",");
+    Serial.print(isnan(temp3C) ? "-999.00" : String(temp3C, 2)); Serial.print(",");
+    Serial.print(isnan(temp4C) ? "-999.00" : String(temp4C, 2)); Serial.print(",");
+    Serial.print(isnan(temp5C) ? "-999.00" : String(temp5C, 2)); Serial.print(",");
+    Serial.print(isnan(temp6C) ? "-999.00" : String(temp6C, 2)); Serial.print(",");
+    Serial.print(isnan(temp7C) ? "-999.00" : String(temp7C, 2)); Serial.print(",");
+    Serial.print(isnan(temp8C) ? "-999.00" : String(temp8C, 2)); Serial.print(",");
+    Serial.print(isnan(voltage1) ? "-999.0000" : String(voltage1, 4)); Serial.print(",");
+    Serial.print(isnan(voltage2) ? "-999.0000" : String(voltage2, 4)); Serial.print(",");
+    Serial.print(isnan(voltage3) ? "-999.0000" : String(voltage3, 4)); Serial.print(",");
+    Serial.print(isnan(voltage4) ? "-999.0000" : String(voltage4, 4));
+    Serial.println();
+    return;
+  }
+
   // System status queries
   if (command == "SYST:ERR?") {
     Serial.println("0,\"No error\"");
@@ -369,8 +646,74 @@ void processVisaCommand(String command) {
     return;
   }
   
+  if (command == "CONF:VOLT:COUN?") {
+    Serial.println("4");
+    return;
+  }
+  
   if (command == "CONF:RATE?") {
     Serial.println("1.0");  // 1 Hz update rate
+    return;
+  }
+  
+  // Relay control commands
+  if (command.startsWith("RELAY:SET ")) {
+    // Format: RELAY:SET R1,ON or RELAY:SET R1,OFF or RELAY:SET ALL,ON
+    String params = command.substring(10); // Remove "RELAY:SET "
+    int commaIndex = params.indexOf(',');
+    if (commaIndex > 0) {
+      String relayStr = params.substring(0, commaIndex);
+      String stateStr = params.substring(commaIndex + 1);
+      stateStr.trim();
+      
+      bool state = (stateStr == "ON" || stateStr == "1");
+      
+      if (relayStr == "ALL") {
+        setAllRelays(state);
+        Serial.println("OK");
+      } else if (relayStr.startsWith("R") && relayStr.length() == 2) {
+        int relayNum = relayStr.substring(1).toInt();
+        if (relayNum >= 1 && relayNum <= 8) {
+          setRelayState(relayNum, state);
+          Serial.println("OK");
+        } else {
+          Serial.println("ERROR: Invalid relay number (1-8)");
+        }
+      } else {
+        Serial.println("ERROR: Invalid relay format (use R1-R8 or ALL)");
+      }
+    } else {
+      Serial.println("ERROR: Invalid command format (use RELAY:SET R1,ON)");
+    }
+    return;
+  }
+  
+  if (command.startsWith("RELAY:GET? ")) {
+    // Format: RELAY:GET? R1 or RELAY:GET? ALL
+    String relayStr = command.substring(11); // Remove "RELAY:GET? "
+    relayStr.trim();
+    
+    if (relayStr == "ALL") {
+      for(int i = 1; i <= 8; i++) {
+        Serial.print(getRelayState(i) ? "1" : "0");
+        if (i < 8) Serial.print(",");
+      }
+      Serial.println();
+    } else if (relayStr.startsWith("R") && relayStr.length() == 2) {
+      int relayNum = relayStr.substring(1).toInt();
+      if (relayNum >= 1 && relayNum <= 8) {
+        Serial.println(getRelayState(relayNum) ? "1" : "0");
+      } else {
+        Serial.println("ERROR: Invalid relay number (1-8)");
+      }
+    } else {
+      Serial.println("ERROR: Invalid relay format (use R1-R8 or ALL)");
+    }
+    return;
+  }
+  
+  if (command == "RELAY:COUNT?") {
+    Serial.println("8");
     return;
   }
   
@@ -482,9 +825,18 @@ void processVisaCommand(String command) {
     Serial.println("MEAS:TEMP? CH<n> - Read channel n (1-8, calibrated)");
     Serial.println("MEAS:TEMP:RAW? ALL - Read all temperatures (raw)");
     Serial.println("MEAS:TEMP:RAW? CH<n> - Read channel n (1-8, raw)");
+    Serial.println("MEAS:VOLT? ALL - Read all voltages (calibrated)");
+    Serial.println("MEAS:VOLT? CH<n> - Read voltage channel n (1-4, calibrated)");
+    Serial.println("MEAS:ALL? - Read all temperatures and voltages");
+    Serial.println("RELAY:SET R<n>,ON/OFF - Set relay n ON/OFF (1-8)");
+    Serial.println("RELAY:SET ALL,ON/OFF - Set all relays ON/OFF");
+    Serial.println("RELAY:GET? R<n> - Get relay n state (1-8)");
+    Serial.println("RELAY:GET? ALL - Get all relay states");
+    Serial.println("RELAY:COUNT? - Number of relays");
     Serial.println("SYST:ERR? - System error query");
     Serial.println("SYST:VERS? - System version");
     Serial.println("CONF:SENS:COUN? - Sensor count");
+    Serial.println("CONF:VOLT:COUN? - Voltage channel count");
     Serial.println("CONF:RATE? - Update rate");
     Serial.println("MODE:VISA, VISA, VSON - Enable VISA mode");
     Serial.println("MODE:LABVIEW, LABVIEW, LVON, CSV - Enable LabVIEW mode");
@@ -523,8 +875,18 @@ void handleVisaSerial() {
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("MAX6675 Multiple Type K Thermocouple Test");
-  Serial.println("Reading from 8 sensors...");
+  
+  // Initialize I2C for ADS1115
+  Wire.begin();
+  
+  // Initialize relay pins
+  initializeRelays();
+  
+  // Initialize ADS1115 ADC
+  initializeADS1115();
+  
+  Serial.println("MAX6675 Multiple Type K Thermocouple Test with Relay Control and ADS1115 ADC");
+  Serial.println("Reading from 8 thermocouples and 4 voltage inputs, controlling 8 relays (D2-D9)...");
   Serial.println("Current calibration offsets:");
   Serial.print("Sensor 1: "); Serial.print(calibrationOffset1); Serial.println("°C");
   Serial.print("Sensor 2: "); Serial.print(calibrationOffset2); Serial.println("°C");
@@ -534,8 +896,15 @@ void setup() {
   Serial.print("Sensor 6: "); Serial.print(calibrationOffset6); Serial.println("°C");
   Serial.print("Sensor 7: "); Serial.print(calibrationOffset7); Serial.println("°C");
   Serial.print("Sensor 8: "); Serial.print(calibrationOffset8); Serial.println("°C");
-  Serial.println("\n=== DEFAULT MODE: VISA Command-Response ===");
-  Serial.println("Send '*IDN?' to identify device or 'HELP?' for commands");
+  Serial.println("Voltage calibration offsets:");
+  Serial.print("Channel A0: "); Serial.print(voltageOffset1); Serial.println("V");
+  Serial.print("Channel A1: "); Serial.print(voltageOffset2); Serial.println("V");
+  Serial.print("Channel A2: "); Serial.print(voltageOffset3); Serial.println("V");
+  Serial.print("Channel A3: "); Serial.print(voltageOffset4); Serial.println("V");
+  Serial.println("\n=== DEFAULT MODE: CSV Data Stream ===");
+  Serial.println("Outputting temperature and voltage data in CSV format every 5 seconds");
+  Serial.println("Format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C,V1,V2,V3,V4");
+  Serial.println("Error values shown as -999.00");
   Serial.println("\nAvailable Commands:");
   Serial.println("  CAL    - Enter calibration mode");
   Serial.println("  EXIT   - Exit current mode");
@@ -545,6 +914,11 @@ void setup() {
   Serial.println("  HUMAN  - Enable human-readable output");
   Serial.println("  VISA   - Enable VISA command-response mode");
   Serial.println("  VSON   - Enable VISA mode (alias)");
+  Serial.println("  RELAYON<n> - Turn relay n ON (1-8)");
+  Serial.println("  RELAYOFF<n> - Turn relay n OFF (1-8)");
+  Serial.println("  RELAYON - Turn all relays ON");
+  Serial.println("  RELAYOFF - Turn all relays OFF");
+  Serial.println("  RELAYSTATUS - Show relay status");
   Serial.println("Waiting for MAX6675 sensors to stabilize...");
   delay(500); // Wait for MAX6675 to stabilize
 }
@@ -589,6 +963,38 @@ void loop() {
       Serial.println("VISA command-response mode enabled");
       Serial.println("Send '*IDN?' to identify device or 'HELP?' for commands");
       return;
+    } else if (command.startsWith("RELAY")) {
+      // Handle relay commands in non-VISA modes
+      if (command.startsWith("RELAY") && command.length() > 5) {
+        String relayCmd = command.substring(5); // Remove "RELAY"
+        relayCmd.trim();
+        
+        if (relayCmd.startsWith("ON") || relayCmd.startsWith("OFF")) {
+          // Format: RELAYON1 or RELAYOFF1 or RELAYON or RELAYOFF (for all)
+          bool state = relayCmd.startsWith("ON");
+          String numStr = relayCmd.substring(state ? 2 : 3);
+          
+          if (numStr.length() == 0) {
+            // All relays
+            setAllRelays(state);
+            Serial.print("All relays turned ");
+            Serial.println(state ? "ON" : "OFF");
+          } else {
+            int relayNum = numStr.toInt();
+            if (relayNum >= 1 && relayNum <= 8) {
+              setRelayState(relayNum, state);
+              Serial.print("Relay ");
+              Serial.print(relayNum);
+              Serial.print(" turned ");
+              Serial.println(state ? "ON" : "OFF");
+            } else {
+              Serial.println("Invalid relay number (1-8)");
+            }
+          }
+        } else if (relayCmd == "STATUS") {
+          displayRelayStatus();
+        }
+      }
     }
   }
   
@@ -601,7 +1007,7 @@ void loop() {
   if (labviewMode) {
     // Output only LabVIEW-compatible format
     outputLabVIEWFormat();
-    delay(1000); // Faster readings for LabVIEW
+    delay(5000); // Output every 5 seconds in CSV mode
     return;
   }
   
@@ -702,6 +1108,54 @@ void loop() {
     Serial.println("°C");
   }
   
+  Serial.println("\n=== VOLTAGE Readings (ADS1115 ADC) ===");
+  
+  // Read from Voltage Channel 1 (A0)
+  float voltage1 = readCalibratedVoltage(0, voltageOffset1);
+  if (isnan(voltage1)) {
+    Serial.println("Channel A0: Error reading voltage!");
+  } else {
+    Serial.print("Channel A0: ");
+    Serial.print(voltage1, 4);
+    Serial.println("V");
+  }
+  
+  delay(100);
+  
+  // Read from Voltage Channel 2 (A1)
+  float voltage2 = readCalibratedVoltage(1, voltageOffset2);
+  if (isnan(voltage2)) {
+    Serial.println("Channel A1: Error reading voltage!");
+  } else {
+    Serial.print("Channel A1: ");
+    Serial.print(voltage2, 4);
+    Serial.println("V");
+  }
+  
+  delay(100);
+  
+  // Read from Voltage Channel 3 (A2)
+  float voltage3 = readCalibratedVoltage(2, voltageOffset3);
+  if (isnan(voltage3)) {
+    Serial.println("Channel A2: Error reading voltage!");
+  } else {
+    Serial.print("Channel A2: ");
+    Serial.print(voltage3, 4);
+    Serial.println("V");
+  }
+  
+  delay(100);
+  
+  // Read from Voltage Channel 4 (A3)
+  float voltage4 = readCalibratedVoltage(3, voltageOffset4);
+  if (isnan(voltage4)) {
+    Serial.println("Channel A3: Error reading voltage!");
+  } else {
+    Serial.print("Channel A3: ");
+    Serial.print(voltage4, 4);
+    Serial.println("V");
+  }
+
   Serial.println(); // Empty line for readability
-  delay(2000); // Read every 2 seconds
+  delay(5000); // Read every 5 seconds
 }

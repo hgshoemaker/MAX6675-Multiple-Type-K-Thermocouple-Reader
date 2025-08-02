@@ -5,11 +5,13 @@ A comprehensive Arduino Mega 2560 project for reading multiple Type K thermocoup
 ## Features
 
 - 🌡️ **Multiple Sensor Support**: Read up to 8 MAX6675 sensors simultaneously
-- 🎯 **Calibration System**: Built-in calibration mode for accurate readings
+- 🔌 **ADS1115 ADC Integration**: 4-channel 16-bit ADC for precision voltage measurements
+- �️ **Relay Control**: 8-channel relay control system for external device automation
+- �🎯 **Calibration System**: Built-in calibration mode for accurate readings
 - 📊 **LabVIEW Integration**: CSV output format for data acquisition systems
 - 🔧 **VISA Command Mode**: SCPI-compliant instrument interface for professional use
 - 🔧 **Easy Configuration**: Simple serial commands for mode switching
-- 📈 **Temperature Display**: Celsius temperature readings for all sensors
+- 📈 **Combined Data**: Temperature and voltage readings in unified format
 - ⚡ **Error Handling**: Robust detection of sensor failures and disconnections
 - 🔌 **Expandable**: Easy to add more sensors (up to 30+ possible)
 
@@ -19,6 +21,8 @@ A comprehensive Arduino Mega 2560 project for reading multiple Type K thermocoup
 - Arduino Mega 2560
 - 1-8x MAX6675 Cold Junction Compensated K-Thermocouple to Digital Converter
 - 1-8x Type K Thermocouples
+- 1x ADS1115 16-bit ADC Module (I2C)
+- 1-8x Relay modules (optional, for automation control)
 - Jumper wires
 - Breadboard or PCB for connections
 
@@ -80,6 +84,26 @@ GND      ──────────── GND
 SCK      ──────────── Pin 52 (shared)
 SO       ──────────── Pin 50 (shared)
 CS       ──────────── Pin 43
+
+ADS1115 ADC Module:
+VDD      ──────────── 5V  
+GND      ──────────── GND
+SDA      ──────────── Pin 20 (SDA)
+SCL      ──────────── Pin 21 (SCL)
+A0       ──────────── Analog input 1 (0-6.144V max)
+A1       ──────────── Analog input 2 (0-6.144V max)
+A2       ──────────── Analog input 3 (0-6.144V max)  
+A3       ──────────── Analog input 4 (0-6.144V max)
+
+Relay Modules (Optional):
+Relay 1  ──────────── Pin D2
+Relay 2  ──────────── Pin D3
+Relay 3  ──────────── Pin D4
+Relay 4  ──────────── Pin D5
+Relay 5  ──────────── Pin D6
+Relay 6  ──────────── Pin D7
+Relay 7  ──────────── Pin D8
+Relay 8  ──────────── Pin D9
 ```
 
 ## Software Requirements
@@ -90,6 +114,7 @@ CS       ──────────── Pin 43
 
 ### Libraries
 - `adafruit/MAX6675 library @ ^1.1.0`
+- `adafruit/Adafruit ADS1X15 @ ^2.5.0`
 - `milesburton/DallasTemperature @ ^3.11.0` (for future expansion)
 - `paulstoffregen/OneWire @ ^2.3.8` (for future expansion)
 
@@ -243,17 +268,20 @@ Individual MAX6675 modules may have slight variations. Calibration ensures all s
 - **Flow Control:** None
 
 ### Data Format
-- **CSV Format:** `S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C`
-- **Update Rate:** 1 second
-- **Error Values:** -999.0 (indicates sensor error/disconnection)
+- **CSV Format:** `S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C,V1,V2,V3,V4`
+  - First 8 values: Temperature readings in °C (2 decimal places)
+  - Last 4 values: Voltage readings in V (4 decimal places)
+- **Update Rate:** 5 seconds (default for CSV mode)
+- **Error Values:** -999.00 (temperature) or -999.0000 (voltage) indicates sensor error
 
 ### Sample LabVIEW VI Flow
 1. Initialize VISA with correct COM port
-2. Send "LVON\\n" command
+2. Send "LVON\\n" command  
 3. Read string from serial port
 4. Parse CSV data using comma delimiter
-5. Convert strings to numeric values
-6. Display/log temperature data
+5. Split data: indices 0-7 = temperatures, indices 8-11 = voltages
+6. Convert strings to numeric values
+7. Display/log temperature and voltage data
 
 ## Expanding the System
 
@@ -343,12 +371,23 @@ For questions or issues:
 2. Review the detailed guides in the documentation
 3. Open an issue on the repository
 
+## Documentation
+
+### Detailed Guides
+- **[ADS1115 Integration Guide](ADS1115_INTEGRATION_GUIDE.md)** - Complete setup and usage for voltage measurements
+- **[VISA Command Guide](VISA_COMMAND_GUIDE.md)** - Professional instrument interface documentation  
+- **[Relay Control Guide](RELAY_CONTROL_GUIDE.md)** - Hardware automation and control systems
+- **[Calibration Guide](CALIBRATION_GUIDE.md)** - Precision measurement calibration procedures
+- **[Sensor Expansion Guide](SENSOR_EXPANSION_GUIDE.md)** - Adding more thermocouples
+- **[LabVIEW Integration](LABVIEW_INTEGRATION.md)** - Data acquisition system integration
+
 ## Version History
 
 - **v1.0.0**: Initial release with basic thermocouple reading
 - **v1.1.0**: Added calibration system
 - **v1.2.0**: Added LabVIEW integration and multiple output formats
 - **v2.1.0**: Updated to Celsius-only output for cleaner data format
+- **v3.0.0**: Added ADS1115 ADC integration and relay control system
 
 ---
 
