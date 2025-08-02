@@ -66,13 +66,13 @@ float voltageOffset4 = 0.0;  // Channel A3 offset in V
 
 // Calibration offsets for each sensor (adjust these values)
 float calibrationOffset1 = 0.0;  // Sensor 1 offset in °C
-float calibrationOffset2 = 0.0;  // Sensor 2 offset in °C
-float calibrationOffset3 = 0.0;  // Sensor 3 offset in °C
-float calibrationOffset4 = 0.0;  // Sensor 4 offset in °C
-float calibrationOffset5 = 0.0;  // Sensor 5 offset in °C
-float calibrationOffset6 = 0.0;  // Sensor 6 offset in °C
-float calibrationOffset7 = 0.0;  // Sensor 7 offset in °C
-float calibrationOffset8 = 0.0;  // Sensor 8 offset in °C
+float calibrationOffset2 = -0.25;  // Sensor 2 offset in °C
+float calibrationOffset3 = -0.06;  // Sensor 3 offset in °C
+float calibrationOffset4 = -0.69;  // Sensor 4 offset in °C
+float calibrationOffset5 = -0.69;  // Sensor 5 offset in °C
+float calibrationOffset6 = -0.06;  // Sensor 6 offset in °C
+float calibrationOffset7 = -0.31;  // Sensor 7 offset in °C
+float calibrationOffset8 = -0.19;  // Sensor 8 offset in °C
 
 // Create multiple MAX6675 objects
 MAX6675 thermocouple1(thermoCLK, thermoCS1, thermoDO);  // Sensor 1
@@ -86,8 +86,8 @@ MAX6675 thermocouple8(thermoCLK, thermoCS8, thermoDO);  // Sensor 8
 
 // Calibration mode flag
 bool calibrationMode = false;
-bool labviewMode = true;   // Flag for LabVIEW output format (DEFAULT - CSV mode)
-bool visaMode = false;     // Flag for VISA command-response mode
+bool labviewMode = false;  // Flag for LabVIEW output format
+bool visaMode = true;      // Flag for VISA command-response mode (DEFAULT)
 
 // VISA command buffer
 String commandBuffer = "";
@@ -100,6 +100,9 @@ const String INSTRUMENT_ID = "MAX6675_THERMOCOUPLE_READER,v1.0,SN001";
 float applyCalibratedReading(float rawTemp, float offset) {
   return rawTemp + offset;
 }
+
+// Function prototype for testIndividualSensors
+void testIndividualSensors();
 
 // Function to read calibrated temperature
 float readCalibratedCelsius(MAX6675 &sensor, float offset) {
@@ -257,14 +260,21 @@ void enterCalibrationMode() {
 void displayCalibrationReadings() {
   Serial.println("=== CALIBRATION READINGS (RAW) ===");
   
-  // Read all sensors without calibration
+  // Read all sensors without calibration, with delays for stability
   double temp1 = thermocouple1.readCelsius();
+  delay(100);
   double temp2 = thermocouple2.readCelsius();
+  delay(100);
   double temp3 = thermocouple3.readCelsius();
+  delay(100);
   double temp4 = thermocouple4.readCelsius();
+  delay(100);
   double temp5 = thermocouple5.readCelsius();
+  delay(100);
   double temp6 = thermocouple6.readCelsius();
+  delay(100);
   double temp7 = thermocouple7.readCelsius();
+  delay(100);
   double temp8 = thermocouple8.readCelsius();
   
   Serial.print("Sensor 1 RAW: ");
@@ -372,14 +382,21 @@ void displayCalibrationReadings() {
 
 // Function to output data in LabVIEW-compatible format (Celsius only)
 void outputLabVIEWFormat() {
-  // Read all sensors
+  // Read all sensors with longer delays between readings for stability
   float temp1C = readCalibratedCelsius(thermocouple1, calibrationOffset1);
+  delay(150);  // Increased delay for better stability
   float temp2C = readCalibratedCelsius(thermocouple2, calibrationOffset2);
+  delay(150);
   float temp3C = readCalibratedCelsius(thermocouple3, calibrationOffset3);
+  delay(150);
   float temp4C = readCalibratedCelsius(thermocouple4, calibrationOffset4);
+  delay(150);
   float temp5C = readCalibratedCelsius(thermocouple5, calibrationOffset5);
+  delay(150);
   float temp6C = readCalibratedCelsius(thermocouple6, calibrationOffset6);
+  delay(150);
   float temp7C = readCalibratedCelsius(thermocouple7, calibrationOffset7);
+  delay(150);
   float temp8C = readCalibratedCelsius(thermocouple8, calibrationOffset8);
   
   // Read all voltage channels
@@ -409,12 +426,19 @@ void outputJSONFormat() {
   Serial.print("{");
   
   float temp1C = readCalibratedCelsius(thermocouple1, calibrationOffset1);
+  delay(100);
   float temp2C = readCalibratedCelsius(thermocouple2, calibrationOffset2);
+  delay(100);
   float temp3C = readCalibratedCelsius(thermocouple3, calibrationOffset3);
+  delay(100);
   float temp4C = readCalibratedCelsius(thermocouple4, calibrationOffset4);
+  delay(100);
   float temp5C = readCalibratedCelsius(thermocouple5, calibrationOffset5);
+  delay(100);
   float temp6C = readCalibratedCelsius(thermocouple6, calibrationOffset6);
+  delay(100);
   float temp7C = readCalibratedCelsius(thermocouple7, calibrationOffset7);
+  delay(100);
   float temp8C = readCalibratedCelsius(thermocouple8, calibrationOffset8);
   
   float voltage1 = readCalibratedVoltage(0, voltageOffset1);
@@ -721,12 +745,19 @@ void processVisaCommand(String command) {
   if (command == "MEAS:TEMP:RAW? ALL") {
     // Return all raw temperatures (no calibration offset)
     double temp1 = thermocouple1.readCelsius();
+    delay(100);
     double temp2 = thermocouple2.readCelsius();
+    delay(100);
     double temp3 = thermocouple3.readCelsius();
+    delay(100);
     double temp4 = thermocouple4.readCelsius();
+    delay(100);
     double temp5 = thermocouple5.readCelsius();
+    delay(100);
     double temp6 = thermocouple6.readCelsius();
+    delay(100);
     double temp7 = thermocouple7.readCelsius();
+    delay(100);
     double temp8 = thermocouple8.readCelsius();
     
     Serial.print(isnan(temp1) ? "-999.00" : String(temp1, 2));
@@ -875,18 +906,8 @@ void handleVisaSerial() {
 
 void setup() {
   Serial.begin(9600);
-  
-  // Initialize I2C for ADS1115
-  Wire.begin();
-  
-  // Initialize relay pins
-  initializeRelays();
-  
-  // Initialize ADS1115 ADC
-  initializeADS1115();
-  
-  Serial.println("MAX6675 Multiple Type K Thermocouple Test with Relay Control and ADS1115 ADC");
-  Serial.println("Reading from 8 thermocouples and 4 voltage inputs, controlling 8 relays (D2-D9)...");
+  Serial.println("MAX6675 Multiple Type K Thermocouple Test");
+  Serial.println("Reading from 8 sensors...");
   Serial.println("Current calibration offsets:");
   Serial.print("Sensor 1: "); Serial.print(calibrationOffset1); Serial.println("°C");
   Serial.print("Sensor 2: "); Serial.print(calibrationOffset2); Serial.println("°C");
@@ -907,6 +928,7 @@ void setup() {
   Serial.println("Error values shown as -999.00");
   Serial.println("\nAvailable Commands:");
   Serial.println("  CAL    - Enter calibration mode");
+  Serial.println("  DEBUG  - Test individual sensors");
   Serial.println("  EXIT   - Exit current mode");
   Serial.println("  LABVIEW - Toggle LabVIEW output format");
   Serial.println("  CSV    - Enable CSV output for LabVIEW");
@@ -914,11 +936,6 @@ void setup() {
   Serial.println("  HUMAN  - Enable human-readable output");
   Serial.println("  VISA   - Enable VISA command-response mode");
   Serial.println("  VSON   - Enable VISA mode (alias)");
-  Serial.println("  RELAYON<n> - Turn relay n ON (1-8)");
-  Serial.println("  RELAYOFF<n> - Turn relay n OFF (1-8)");
-  Serial.println("  RELAYON - Turn all relays ON");
-  Serial.println("  RELAYOFF - Turn all relays OFF");
-  Serial.println("  RELAYSTATUS - Show relay status");
   Serial.println("Waiting for MAX6675 sensors to stabilize...");
   delay(500); // Wait for MAX6675 to stabilize
 }
@@ -938,6 +955,8 @@ void loop() {
     
     if (command == "CAL") {
       enterCalibrationMode();
+    } else if (command == "DEBUG" || command == "TEST") {
+      testIndividualSensors();
     } else if (command == "EXIT") {
       calibrationMode = false;
       labviewMode = false;
@@ -1007,7 +1026,7 @@ void loop() {
   if (labviewMode) {
     // Output only LabVIEW-compatible format
     outputLabVIEWFormat();
-    delay(5000); // Output every 5 seconds in CSV mode
+    delay(1000); // Faster readings for LabVIEW
     return;
   }
   
@@ -1158,4 +1177,58 @@ void loop() {
 
   Serial.println(); // Empty line for readability
   delay(5000); // Read every 5 seconds
+}
+
+// Debug function to test individual sensors
+void testIndividualSensors() {
+  Serial.println("=== INDIVIDUAL SENSOR TEST ===");
+  
+  Serial.print("Sensor 1 (Pin 53): ");
+  float temp1 = readCalibratedCelsius(thermocouple1, calibrationOffset1);
+  Serial.print(isnan(temp1) ? "ERROR" : String(temp1, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 2 (Pin 49): ");
+  float temp2 = readCalibratedCelsius(thermocouple2, calibrationOffset2);
+  Serial.print(isnan(temp2) ? "ERROR" : String(temp2, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 3 (Pin 48): ");
+  float temp3 = readCalibratedCelsius(thermocouple3, calibrationOffset3);
+  Serial.print(isnan(temp3) ? "ERROR" : String(temp3, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 4 (Pin 47): ");
+  float temp4 = readCalibratedCelsius(thermocouple4, calibrationOffset4);
+  Serial.print(isnan(temp4) ? "ERROR" : String(temp4, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 5 (Pin 46): ");
+  float temp5 = readCalibratedCelsius(thermocouple5, calibrationOffset5);
+  Serial.print(isnan(temp5) ? "ERROR" : String(temp5, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 6 (Pin 45): ");
+  float temp6 = readCalibratedCelsius(thermocouple6, calibrationOffset6);
+  Serial.print(isnan(temp6) ? "ERROR" : String(temp6, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 7 (Pin 44): ");
+  float temp7 = readCalibratedCelsius(thermocouple7, calibrationOffset7);
+  Serial.print(isnan(temp7) ? "ERROR" : String(temp7, 2) + "°C");
+  Serial.println();
+  delay(250);
+  
+  Serial.print("Sensor 8 (Pin 43): ");
+  float temp8 = readCalibratedCelsius(thermocouple8, calibrationOffset8);
+  Serial.print(isnan(temp8) ? "ERROR" : String(temp8, 2) + "°C");
+  Serial.println();
+  
+  Serial.println("===================================");
 }
