@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "max6675.h"
 #include <Wire.h>
-#include <Adafruit_ADS1015.h>
+#include <Adafruit_ADS1X15.h>
 
 // ADS1115 ADC setup
 Adafruit_ADS1115 ads;  // Create ADS1115 object (default I2C address 0x48)
