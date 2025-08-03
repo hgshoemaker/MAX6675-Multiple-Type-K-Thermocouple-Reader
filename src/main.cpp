@@ -154,11 +154,12 @@ float readCalibratedVoltage(int channel, float offset) {
 // Function to initialize ADS1115
 void initializeADS1115() {
   if (!ads.begin()) {
-    Serial.println("Failed to initialize ADS1115!");
+    Serial.println("WARNING: ADS1115 not found! Voltage readings will show -999.0000");
+    Serial.println("Check I2C wiring: SDA=Pin20, SCL=Pin21, VDD=5V, GND=GND");
     return;
   }
   ads.setGain(adsGain);
-  Serial.println("ADS1115 initialized successfully");
+  Serial.println("ADS1115 initialized successfully - 4 voltage channels available");
 }
 
 // Function to initialize relay pins
@@ -906,8 +907,15 @@ void handleVisaSerial() {
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("MAX6675 Multiple Type K Thermocouple Test");
-  Serial.println("Reading from 8 sensors...");
+  
+  // Initialize I2C for ADS1115
+  Wire.begin();
+  
+  // Initialize ADS1115 ADC
+  initializeADS1115();
+  
+  Serial.println("MAX6675 Multiple Type K Thermocouple Test with ADS1115 ADC");
+  Serial.println("Reading from 8 thermocouples and 4 voltage inputs...");
   Serial.println("Current calibration offsets:");
   Serial.print("Sensor 1: "); Serial.print(calibrationOffset1); Serial.println("°C");
   Serial.print("Sensor 2: "); Serial.print(calibrationOffset2); Serial.println("°C");
@@ -929,6 +937,7 @@ void setup() {
   Serial.println("\nAvailable Commands:");
   Serial.println("  CAL    - Enter calibration mode");
   Serial.println("  DEBUG  - Test individual sensors");
+  Serial.println("  TEST   - Test CSV output immediately");
   Serial.println("  EXIT   - Exit current mode");
   Serial.println("  LABVIEW - Toggle LabVIEW output format");
   Serial.println("  CSV    - Enable CSV output for LabVIEW");
@@ -936,7 +945,7 @@ void setup() {
   Serial.println("  HUMAN  - Enable human-readable output");
   Serial.println("  VISA   - Enable VISA command-response mode");
   Serial.println("  VSON   - Enable VISA mode (alias)");
-  Serial.println("Waiting for MAX6675 sensors to stabilize...");
+  Serial.println("Waiting for sensors to stabilize...");
   delay(500); // Wait for MAX6675 to stabilize
 }
 
@@ -966,10 +975,16 @@ void loop() {
       labviewMode = true;
       calibrationMode = false;
       visaMode = false;
+      Serial.println("OK");
       //Serial.println("LabVIEW CSV mode enabled");
-      //Serial.println("Format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C");
-      //Serial.println("Error values represented as -999.0");
+      //Serial.println("Format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C,V1,V2,V3,V4");
+      //Serial.println("Error values represented as -999.00");
       delay(1000);
+    } else if (command == "TEST" || command == "TESTCSV") {
+      // Immediate test output
+      Serial.println("TEST OUTPUT:");
+      outputLabVIEWFormat();
+      Serial.println("TEST COMPLETE");
     } else if (command == "LVOFF" || command == "HUMAN") {
       labviewMode = false;
       calibrationMode = false;
@@ -1026,7 +1041,7 @@ void loop() {
   if (labviewMode) {
     // Output only LabVIEW-compatible format
     outputLabVIEWFormat();
-    delay(1000); // Faster readings for LabVIEW
+    delay(5000); // 5-second intervals for CSV data stream
     return;
   }
   
