@@ -6,6 +6,7 @@
 // ADS1115 ADC setup
 Adafruit_ADS1115 ads;  // Create ADS1115 object (default I2C address 0x48)
 
+
 // MAX6675 pin connections - All sensors share SCK and MISO
 // VCC -> 5V (all sensors)
 // GND -> GND (all sensors)
@@ -26,32 +27,22 @@ int thermoCS6 = 45;   // Sixth sensor CS
 int thermoCS7 = 44;   // Seventh sensor CS
 int thermoCS8 = 43;   // Eighth sensor CS
 
-// Relay control pins (D2-D9)
+// Relay control pins (D2-D4) - Reduced to 3 relays
 int relay1Pin = 2;    // Relay 1 on pin D2
 int relay2Pin = 3;    // Relay 2 on pin D3
 int relay3Pin = 4;    // Relay 3 on pin D4
-int relay4Pin = 5;    // Relay 4 on pin D5
-int relay5Pin = 6;    // Relay 5 on pin D6
-int relay6Pin = 7;    // Relay 6 on pin D7
-int relay7Pin = 8;    // Relay 7 on pin D8
-int relay8Pin = 9;    // Relay 8 on pin D9
 
-// SSR control pins (D10-D12) - NEVER all on simultaneously
+// SSR control pins (D10-D12) - ONLY ONE active at a time
 int ssr1Pin = 10;     // SSR 1 on pin D10
 int ssr2Pin = 11;     // SSR 2 on pin D11
 int ssr3Pin = 12;     // SSR 3 on pin D12
 
-// Relay states (false = OFF, true = ON)
+// Relay states (false = OFF, true = ON) - Reduced to 3 relays
 bool relay1State = false;
 bool relay2State = false;
 bool relay3State = false;
-bool relay4State = false;
-bool relay5State = false;
-bool relay6State = false;
-bool relay7State = false;
-bool relay8State = false;
 
-// SSR states (false = OFF, true = ON) - SAFETY: Never all on simultaneously
+// SSR states (false = OFF, true = ON) - SAFETY: Only one on at a time
 bool ssr1State = false;
 bool ssr2State = false;
 bool ssr3State = false;
@@ -163,7 +154,7 @@ float readCalibratedVoltage(int channel, float offset) {
 
 // Function to initialize ADS1115
 void initializeADS1115() {
-  if (!ads.begin()) {
+  if (!ads.begin(0X48)) {
     Serial.println("WARNING: ADS1115 not found! Voltage readings will show -999.0000");
     Serial.println("Check I2C wiring: SDA=Pin20, SCL=Pin21, VDD=5V, GND=GND");
     return;
@@ -177,11 +168,6 @@ void initializeRelays() {
   pinMode(relay1Pin, OUTPUT);
   pinMode(relay2Pin, OUTPUT);
   pinMode(relay3Pin, OUTPUT);
-  pinMode(relay4Pin, OUTPUT);
-  pinMode(relay5Pin, OUTPUT);
-  pinMode(relay6Pin, OUTPUT);
-  pinMode(relay7Pin, OUTPUT);
-  pinMode(relay8Pin, OUTPUT);
   
   // Initialize SSR pins
   pinMode(ssr1Pin, OUTPUT);
@@ -192,11 +178,6 @@ void initializeRelays() {
   digitalWrite(relay1Pin, LOW);
   digitalWrite(relay2Pin, LOW);
   digitalWrite(relay3Pin, LOW);
-  digitalWrite(relay4Pin, LOW);
-  digitalWrite(relay5Pin, LOW);
-  digitalWrite(relay6Pin, LOW);
-  digitalWrite(relay7Pin, LOW);
-  digitalWrite(relay8Pin, LOW);
   
   // Set all SSRs to OFF initially
   digitalWrite(ssr1Pin, LOW);
@@ -213,11 +194,6 @@ void setRelayState(int relayNumber, bool state) {
     case 1: pin = relay1Pin; relayState = &relay1State; break;
     case 2: pin = relay2Pin; relayState = &relay2State; break;
     case 3: pin = relay3Pin; relayState = &relay3State; break;
-    case 4: pin = relay4Pin; relayState = &relay4State; break;
-    case 5: pin = relay5Pin; relayState = &relay5State; break;
-    case 6: pin = relay6Pin; relayState = &relay6State; break;
-    case 7: pin = relay7Pin; relayState = &relay7State; break;
-    case 8: pin = relay8Pin; relayState = &relay8State; break;
     default: return; // Invalid relay number
   }
   
@@ -231,18 +207,13 @@ bool getRelayState(int relayNumber) {
     case 1: return relay1State;
     case 2: return relay2State;
     case 3: return relay3State;
-    case 4: return relay4State;
-    case 5: return relay5State;
-    case 6: return relay6State;
-    case 7: return relay7State;
-    case 8: return relay8State;
     default: return false; // Invalid relay number
   }
 }
 
 // Function to set all relays to a specific state
 void setAllRelays(bool state) {
-  for(int i = 1; i <= 8; i++) {
+  for(int i = 1; i <= 3; i++) {
     setRelayState(i, state);
   }
 }
@@ -250,7 +221,7 @@ void setAllRelays(bool state) {
 // Function to display relay status
 void displayRelayStatus() {
   Serial.println("=== RELAY STATUS ===");
-  for(int i = 1; i <= 8; i++) {
+  for(int i = 1; i <= 3; i++) {
     Serial.print("Relay ");
     Serial.print(i);
     Serial.print(" (D");
@@ -275,7 +246,7 @@ bool wouldViolateSafety(int ssrNumber, bool newState) {
   if (ssrNumber != 3 && ssr3State) onCount++;
   if (newState) onCount++; // Add the one we're trying to turn on
   
-  return (onCount >= 3); // Violation if 3 or more would be on
+  return (onCount >= 2); // Violation if 2 or more would be on (only 1 allowed at a time)
 }
 
 // Function to set SSR state with safety check
@@ -334,7 +305,7 @@ void displaySSRStatus() {
   int onCount = (ssr1State ? 1 : 0) + (ssr2State ? 1 : 0) + (ssr3State ? 1 : 0);
   Serial.print("Active SSRs: ");
   Serial.print(onCount);
-  Serial.println("/3 (Safety: Never all on)");
+  Serial.println("/3 (Safety: Only one on at a time)");
   Serial.println("==================");
 }
 
@@ -795,14 +766,14 @@ void processVisaCommand(String command) {
         Serial.println("OK");
       } else if (relayStr.startsWith("R") && relayStr.length() == 2) {
         int relayNum = relayStr.substring(1).toInt();
-        if (relayNum >= 1 && relayNum <= 8) {
+        if (relayNum >= 1 && relayNum <= 3) {
           setRelayState(relayNum, state);
           Serial.println("OK");
         } else {
-          Serial.println("ERROR: Invalid relay number (1-8)");
+          Serial.println("ERROR: Invalid relay number (1-3)");
         }
       } else {
-        Serial.println("ERROR: Invalid relay format (use R1-R8 or ALL)");
+        Serial.println("ERROR: Invalid relay format (use R1-R3 or ALL)");
       }
     } else {
       Serial.println("ERROR: Invalid command format (use RELAY:SET R1,ON)");
@@ -816,26 +787,26 @@ void processVisaCommand(String command) {
     relayStr.trim();
     
     if (relayStr == "ALL") {
-      for(int i = 1; i <= 8; i++) {
+      for(int i = 1; i <= 3; i++) {
         Serial.print(getRelayState(i) ? "1" : "0");
-        if (i < 8) Serial.print(",");
+        if (i < 3) Serial.print(",");
       }
       Serial.println();
     } else if (relayStr.startsWith("R") && relayStr.length() == 2) {
       int relayNum = relayStr.substring(1).toInt();
-      if (relayNum >= 1 && relayNum <= 8) {
+      if (relayNum >= 1 && relayNum <= 3) {
         Serial.println(getRelayState(relayNum) ? "1" : "0");
       } else {
-        Serial.println("ERROR: Invalid relay number (1-8)");
+        Serial.println("ERROR: Invalid relay number (1-3)");
       }
     } else {
-      Serial.println("ERROR: Invalid relay format (use R1-R8 or ALL)");
+      Serial.println("ERROR: Invalid relay format (use R1-R3 or ALL)");
     }
     return;
   }
   
   if (command == "RELAY:COUNT?") {
-    Serial.println("8");
+    Serial.println("3");
     return;
   }
   
@@ -853,7 +824,7 @@ void processVisaCommand(String command) {
       
       if (ssrStr == "ALL") {
         if (state) {
-          Serial.println("ERROR: Cannot turn all SSRs ON (safety violation)");
+          Serial.println("ERROR: Cannot turn all SSRs ON (safety violation - only one allowed)");
         } else {
           setAllSSROff();
           Serial.println("OK");
@@ -864,7 +835,7 @@ void processVisaCommand(String command) {
           if (setSSRState(ssrNum, state)) {
             Serial.println("OK");
           } else {
-            Serial.println("ERROR: Safety violation - would result in all SSRs ON");
+            Serial.println("ERROR: Safety violation - only one SSR allowed ON at a time");
           }
         } else {
           Serial.println("ERROR: Invalid SSR number (1-3)");
@@ -1032,12 +1003,12 @@ void processVisaCommand(String command) {
     Serial.println("MEAS:VOLT? ALL - Read all voltages (calibrated)");
     Serial.println("MEAS:VOLT? CH<n> - Read voltage channel n (1-4, calibrated)");
     Serial.println("MEAS:ALL? - Read all temperatures and voltages");
-    Serial.println("RELAY:SET R<n>,ON/OFF - Set relay n ON/OFF (1-8)");
+    Serial.println("RELAY:SET R<n>,ON/OFF - Set relay n ON/OFF (1-3)");
     Serial.println("RELAY:SET ALL,ON/OFF - Set all relays ON/OFF");
-    Serial.println("RELAY:GET? R<n> - Get relay n state (1-8)");
+    Serial.println("RELAY:GET? R<n> - Get relay n state (1-3)");
     Serial.println("RELAY:GET? ALL - Get all relay states");
     Serial.println("RELAY:COUNT? - Number of relays");
-    Serial.println("SSR:SET S<n>,ON/OFF - Set SSR n ON/OFF (1-3, safety limited)");
+    Serial.println("SSR:SET S<n>,ON/OFF - Set SSR n ON/OFF (1-3, only one at a time)");
     Serial.println("SSR:SET ALL,OFF - Turn all SSRs OFF (ON not allowed)");
     Serial.println("SSR:GET? S<n> - Get SSR n state (1-3)");
     Serial.println("SSR:GET? ALL - Get all SSR states");
@@ -1126,10 +1097,10 @@ void setup() {
   Serial.println("  HUMAN  - Enable human-readable output");
   Serial.println("  VISA   - Enable VISA command-response mode");
   Serial.println("  VSON   - Enable VISA mode (alias)");
-  Serial.println("  RELAYON<n> - Turn relay n ON (1-8)");
-  Serial.println("  RELAYOFF<n> - Turn relay n OFF (1-8)");
+  Serial.println("  RELAYON<n> - Turn relay n ON (1-3)");
+  Serial.println("  RELAYOFF<n> - Turn relay n OFF (1-3)");
   Serial.println("  RELAYSTATUS - Show relay status");
-  Serial.println("  SSRON<n> - Turn SSR n ON (1-3, safety limited)");
+  Serial.println("  SSRON<n> - Turn SSR n ON (1-3, only one at a time)");
   Serial.println("  SSROFF<n> - Turn SSR n OFF (1-3)");
   Serial.println("  SSRSTATUS - Show SSR status");
   Serial.println("Waiting for sensors to stabilize...");
@@ -1202,14 +1173,14 @@ void loop() {
             Serial.println(state ? "ON" : "OFF");
           } else {
             int relayNum = numStr.toInt();
-            if (relayNum >= 1 && relayNum <= 8) {
+            if (relayNum >= 1 && relayNum <= 3) {
               setRelayState(relayNum, state);
               Serial.print("Relay ");
               Serial.print(relayNum);
               Serial.print(" turned ");
               Serial.println(state ? "ON" : "OFF");
             } else {
-              Serial.println("Invalid relay number (1-8)");
+              Serial.println("Invalid relay number (1-3)");
             }
           }
         } else if (relayCmd == "STATUS") {
@@ -1230,7 +1201,7 @@ void loop() {
           if (numStr.length() == 0) {
             // All SSRs
             if (state) {
-              Serial.println("ERROR: Cannot turn all SSRs ON (safety violation)");
+              Serial.println("ERROR: Cannot turn all SSRs ON (safety violation - only one allowed)");
             } else {
               setAllSSROff();
               Serial.println("All SSRs turned OFF");
@@ -1244,7 +1215,7 @@ void loop() {
                 Serial.print(" turned ");
                 Serial.println(state ? "ON" : "OFF");
               } else {
-                Serial.println("ERROR: Safety violation - would result in all SSRs ON");
+                Serial.println("ERROR: Safety violation - only one SSR allowed ON at a time");
               }
             } else {
               Serial.println("Invalid SSR number (1-3)");
