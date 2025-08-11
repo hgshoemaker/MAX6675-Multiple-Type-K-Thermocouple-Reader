@@ -313,7 +313,7 @@ void setup() {
   // Initialize ADS1115 ADC
   initializeADS1115();
   
-/*  Serial.println("MAX6675 Multiple Type K Thermocouple Reader with ADS1115 ADC");
+  /*Serial.println("MAX6675 Multiple Type K Thermocouple Reader with ADS1115 ADC");
   Serial.println("Reading from 8 thermocouples and 2 voltage inputs...");
   Serial.println("Current calibration offsets:");
   Serial.print("Sensor 1: "); Serial.print(calibrationOffset1); Serial.println("°C");
@@ -365,7 +365,7 @@ void loop() {
   
   // Normal CSV output operation
   outputCSVFormat();
-  delay(1000); // 1-second intervals for CSV data stream
+  delay(5000); // 5-second intervals for CSV data stream
 }
 
 // Debug function to test individual sensors

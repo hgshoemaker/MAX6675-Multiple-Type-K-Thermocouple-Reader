@@ -2,7 +2,7 @@
 
 ## Overview
 
-The MAX6675 thermocouple reader now includes ADS1115 16-bit ADC functionality for reading analog voltages on 4 channels (A0-A3). This provides high-precision voltage measurements alongside the thermocouple temperature readings.
+The MAX6675 thermocouple reader includes ADS1115 16-bit ADC functionality for reading analog voltages on 2 channels (A0-A1). This provides high-precision voltage measurements alongside the thermocouple temperature readings.
 
 ## Hardware Setup
 
@@ -17,8 +17,8 @@ GND            ────── GND
 Analog Inputs:
 A0             ────── Your analog signal 1 (0-6.144V max)
 A1             ────── Your analog signal 2 (0-6.144V max)
-A2             ────── Your analog signal 3 (0-6.144V max)
-A3             ────── Your analog signal 4 (0-6.144V max)
+A2             ────── Not used
+A3             ────── Not used
 ```
 
 ### I2C Address Configuration

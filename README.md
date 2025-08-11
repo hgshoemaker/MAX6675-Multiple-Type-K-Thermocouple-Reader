@@ -1,17 +1,15 @@
 # MAX6675 Multiple Type K Thermocouple Reader
 
-A comprehensive Arduino Mega 2560 project for reading multiple Type K thermocouples using MAX6675 amplifier modules, with calibration features and LabVIEW integration.
+A simplified Arduino Mega 2560 project for reading multiple Type K thermocouples using MAX6675 amplifier modules, with calibration features and CSV data output.
 
 ## Features
 
 - 🌡️ **Multiple Sensor Support**: Read up to 8 MAX6675 sensors simultaneously
-- 🔌 **ADS1115 ADC Integration**: 4-channel 16-bit ADC for precision voltage measurements
-- �️ **Relay Control**: 8-channel relay control system for external device automation
-- �🎯 **Calibration System**: Built-in calibration mode for accurate readings
-- 📊 **LabVIEW Integration**: CSV output format for data acquisition systems
-- 🔧 **VISA Command Mode**: SCPI-compliant instrument interface for professional use
-- 🔧 **Easy Configuration**: Simple serial commands for mode switching
-- 📈 **Combined Data**: Temperature and voltage readings in unified format
+- 🔌 **ADS1115 ADC Integration**: 2-channel 16-bit ADC for precision voltage measurements (A0, A1)
+- 🎯 **Calibration System**: Built-in calibration mode for accurate readings
+- 📊 **CSV Output**: Clean CSV format for data acquisition systems
+- 🔧 **Simple Configuration**: Minimal serial commands for operation
+- 📈 **Combined Data**: Temperature and voltage readings in unified CSV format
 - ⚡ **Error Handling**: Robust detection of sensor failures and disconnections
 - 🔌 **Expandable**: Easy to add more sensors (up to 30+ possible)
 
@@ -21,8 +19,7 @@ A comprehensive Arduino Mega 2560 project for reading multiple Type K thermocoup
 - Arduino Mega 2560
 - 1-8x MAX6675 Cold Junction Compensated K-Thermocouple to Digital Converter
 - 1-8x Type K Thermocouples
-- 1x ADS1115 16-bit ADC Module (I2C)
-- 1-8x Relay modules (optional, for automation control)
+- 1x ADS1115 16-bit ADC Module (I2C) - using channels A0 and A1 only
 - Jumper wires
 - Breadboard or PCB for connections
 
@@ -92,18 +89,8 @@ SDA      ──────────── Pin 20 (SDA)
 SCL      ──────────── Pin 21 (SCL)
 A0       ──────────── Analog input 1 (0-6.144V max)
 A1       ──────────── Analog input 2 (0-6.144V max)
-A2       ──────────── Analog input 3 (0-6.144V max)  
-A3       ──────────── Analog input 4 (0-6.144V max)
-
-Relay Modules (Optional):
-Relay 1  ──────────── Pin D2
-Relay 2  ──────────── Pin D3
-Relay 3  ──────────── Pin D4
-Relay 4  ──────────── Pin D5
-Relay 5  ──────────── Pin D6
-Relay 6  ──────────── Pin D7
-Relay 7  ──────────── Pin D8
-Relay 8  ──────────── Pin D9
+A2       ──────────── Not used
+A3       ──────────── Not used
 ```
 
 ## Software Requirements
@@ -179,46 +166,36 @@ Sensor 8 RAW: -1.00°C
 Average: 0.13°C
 ```
 
-#### 3. LabVIEW Mode
-Enable by sending `LVON` command for CSV output:
+#### 2. CSV Data Stream Mode
+Continuous CSV output for data acquisition:
 ```
-23.50,24.10,22.75,25.00,23.25,24.50,23.00,24.75
-23.75,24.25,23.00,25.25,23.50,24.75,23.25,25.00
+23.50,24.10,22.75,25.00,23.25,24.50,23.00,24.75,-0.0012,0.0034
+23.75,24.25,23.00,25.25,23.50,24.75,23.25,25.00,-0.0015,0.0031
 ```
+Format: `S1,S2,S3,S4,S5,S6,S7,S8,V1,V2`
 
 ### Serial Commands
 
 | Command | Function | Description |
 |---------|----------|-------------|
-| `LVON` | Enable LabVIEW mode | CSV output format for data acquisition |
-| `LABVIEW` | Same as LVON | Alternative command |
-| `CSV` | Same as LVON | Alternative command |
-| `LVOFF` | Disable LabVIEW mode | Return to human-readable format |
-| `HUMAN` | Same as LVOFF | Alternative command |
-| `VISA` | Enable VISA mode | SCPI command-response for instruments |
-| `VSON` | Same as VISA | Alternative command |
 | `CAL` | Calibration mode | Display raw readings for calibration |
-| `EXIT` | Exit current mode | Return to previous operating mode |
+| `DEBUG` | Test individual sensors | Display each sensor reading separately |
+| `EXIT` | Exit calibration mode | Return to CSV output mode |
 
 ### Operation Modes
 
-#### 1. Human-Readable Mode (Default)
-- Displays temperature readings in a user-friendly format
-- Updates every 2 seconds
-- Includes sensor labels and units
-
-#### 2. LabVIEW Mode
+#### 1. CSV Output Mode (Default)
 - Outputs comma-separated values (CSV) format
-- Updates every 1 second
-- Optimized for data acquisition systems
-- Error values shown as `-999.0`
+- Updates every 5 seconds
+- Format: `S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C,V1,V2`
+- 8 temperature readings + 2 voltage readings
+- Error values shown as `-999.00` for temperature, `-999.0000` for voltage
 
-#### 3. VISA Command-Response Mode (NEW)
-- SCPI-compliant instrument behavior
-- Query-based temperature readings
-- Full command set for automated testing
-- Professional instrumentation compatibility
-- See [VISA Command Guide](VISA_COMMAND_GUIDE.md) for details
+#### 2. Calibration Mode
+- Displays raw (uncalibrated) temperature readings
+- Shows average and differences from average
+- Updates every 3 seconds
+- Used for determining calibration offsets
 
 ## Calibration
 
@@ -258,9 +235,26 @@ Individual MAX6675 modules may have slight variations. Calibration ensures all s
    - Upload updated code
    - Verify calibrated readings
 
-## LabVIEW Integration
+## Data Acquisition Integration
 
-### VISA Configuration
+### CSV Data Format
+The device outputs data in CSV format suitable for most data acquisition systems:
+
+```
+Format: S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C,V1,V2
+Units:  °C,  °C,  °C,  °C,  °C,  °C,  °C,  °C,  V, V
+```
+
+Example output:
+```
+23.50,24.10,22.75,25.00,23.25,24.50,23.00,24.75,0.1234,0.5678
+23.75,24.25,23.00,25.25,23.50,24.75,23.25,25.00,0.1245,0.5689
+```
+
+### Error Handling
+- Disconnected thermocouples: `-999.00`
+- ADS1115 connection issues: `-999.0000`
+- Update rate: Every 5 seconds
 - **Baud Rate:** 9600
 - **Data Bits:** 8
 - **Stop Bits:** 1
@@ -320,34 +314,44 @@ Individual MAX6675 modules may have slight variations. Calibration ensures all s
 - Check baud rate (9600)
 - Ensure Arduino is powered and connected
 
-**LabVIEW not receiving data:**
-- Send `LVON` command first
-- Verify VISA settings match Arduino configuration
-- Check for proper string parsing in LabVIEW
+**No CSV output:**
+- Device is in calibration mode - send `EXIT` command
+- Check serial connection and baud rate (9600)
+- Verify Arduino is powered and connected
+
+**ADS1115 voltage readings show -999.0000:**
+- Check I2C wiring (SDA=Pin20, SCL=Pin21)
+- Verify ADS1115 power connections (VDD=5V, GND=GND)
+- Ensure ADS1115 I2C address is 0x48
 
 ### Performance Notes
 
-- **Reading cycle time**: ~1.6 seconds for all 8 sensors (100ms delay between sensors)
-- **Memory usage**: ~1886 bytes RAM (23% of Arduino Mega)
-- **Flash usage**: ~13254 bytes (5.2% of Arduino Mega)
-- **LabVIEW CSV output**: 8 values per line (8 sensors in Celsius)
+- **Reading cycle time**: ~1.2 seconds for all 8 sensors (150ms delay between sensors)
+- **CSV output rate**: Every 5 seconds
+- **Voltage channels**: 2 channels (A0, A1) on ADS1115
+- **Temperature precision**: ±0.25°C (with proper calibration)
+- **Voltage precision**: 16-bit ADC with 0.1875mV resolution
 
 ## File Structure
 
 ```
-Type-K-Temprature/
+MAX6675-Multiple-Type-K-Thermocouple-Reader/
 ├── src/
-│   └── main.cpp                 # Main Arduino code
+│   └── main.cpp                 # Main Arduino code (simplified)
 ├── include/
 │   └── README                   # Include directory (empty)
 ├── lib/
 │   └── README                   # Library directory (empty)
 ├── test/
 │   └── README                   # Test directory (empty)
+├── examples/
+│   └── README.md                # Example usage
 ├── platformio.ini               # PlatformIO configuration
 ├── README.md                    # This file
 ├── CALIBRATION_GUIDE.md         # Detailed calibration instructions
-├── LABVIEW_INTEGRATION.md       # LabVIEW setup guide
+├── DATA_ACQUISITION_GUIDE.md    # Data acquisition integration guide
+├── ADS1115_INTEGRATION_GUIDE.md # ADS1115 voltage measurement guide
+├── CSV_TROUBLESHOOTING.md       # Troubleshooting CSV output issues
 ├── SENSOR_EXPANSION_GUIDE.md    # Guide for adding more sensors
 └── 8_SENSOR_WIRING_GUIDE.md     # Complete wiring guide for 8 sensors
 ```

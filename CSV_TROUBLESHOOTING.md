@@ -17,8 +17,8 @@ This will output one line of CSV data immediately to verify the system is readin
 The system should show this during startup:
 ```
 MAX6675 Multiple Type K Thermocouple Test with ADS1115 ADC
-Reading from 8 thermocouples and 4 voltage inputs...
-ADS1115 initialized successfully - 4 voltage channels available
+Reading from 8 thermocouples and 2 voltage inputs...
+ADS1115 initialized successfully - 2 voltage channels available
 (or)
 WARNING: ADS1115 not found! Voltage readings will show -999.0000
 ```
@@ -28,8 +28,8 @@ After sending `CSV`, wait at least 5 seconds for the first data output. The syst
 
 #### 4. **Expected CSV Format**
 ```
-S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C,V1,V2,V3,V4
-25.50,26.25,24.75,25.00,26.50,25.25,24.50,25.75,3.3000,1.2500,2.4750,0.5000
+S1_C,S2_C,S3_C,S4_C,S5_C,S6_C,S7_C,S8_C,V1,V2
+25.50,26.25,24.75,25.00,26.50,25.25,24.50,25.75,3.3000,1.2500
 ```
 
 ### Common Issues and Fixes
