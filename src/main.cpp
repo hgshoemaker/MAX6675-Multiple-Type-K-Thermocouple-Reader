@@ -305,7 +305,7 @@ void outputCSVFormat() {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   // Initialize I2C for ADS1115
   Wire.begin();
