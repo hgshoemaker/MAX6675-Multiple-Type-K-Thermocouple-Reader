@@ -126,7 +126,31 @@ void initializeADS1115() {
     return;
   }
   ads.setGain(adsGain);
-  Serial.println("ADS1115 initialized successfully - 2 voltage channels available");
+//  Serial.println("ADS1115 initialized successfully - 2 voltage channels available");
+}
+
+// Digital output pin definitions
+#define R1_PIN 2   // Relay 1
+#define R2_PIN 3   // Relay 2
+#define R3_PIN 4   // Relay 3
+#define S1_PIN 10  // SSR 1
+#define S2_PIN 11  // SSR 2
+#define S3_PIN 12  // SSR 3
+
+void initializeDigitalOutputs() {
+  pinMode(R1_PIN, OUTPUT);
+  pinMode(R2_PIN, OUTPUT);
+  pinMode(R3_PIN, OUTPUT);
+  pinMode(S1_PIN, OUTPUT);
+  pinMode(S2_PIN, OUTPUT);
+  pinMode(S3_PIN, OUTPUT);
+  // Set all outputs LOW initially
+  digitalWrite(R1_PIN, LOW);
+  digitalWrite(R2_PIN, LOW);
+  digitalWrite(R3_PIN, LOW);
+  digitalWrite(S1_PIN, LOW);
+  digitalWrite(S2_PIN, LOW);
+  digitalWrite(S3_PIN, LOW);
 }
 
 // Function to enter calibration mode
@@ -312,6 +336,9 @@ void setup() {
   
   // Initialize ADS1115 ADC
   initializeADS1115();
+  
+  // Initialize digital output pins
+  initializeDigitalOutputs();
   
 /*  Serial.println("MAX6675 Multiple Type K Thermocouple Reader with ADS1115 ADC");
   Serial.println("Reading from 8 thermocouples and 2 voltage inputs...");
