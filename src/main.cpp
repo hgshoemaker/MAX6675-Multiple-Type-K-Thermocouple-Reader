@@ -43,14 +43,14 @@ float voltageOffset1 = 0.0;  // Channel A0 offset in V
 float voltageOffset2 = 0.0;  // Channel A1 offset in V
 
 // Calibration offsets for each sensor (adjust these values)
-float calibrationOffset1 = -0.18;  // Sensor 1 offset in °C
-float calibrationOffset2 = 0.18;  // Sensor 2 offset in °C
-float calibrationOffset3 = 0.28;  // Sensor 3 offset in °C
-float calibrationOffset4 = 0.19;  // Sensor 4 offset in °C
-float calibrationOffset5 = 0.26;  // Sensor 5 offset in °C
-float calibrationOffset6 = -0.17;  // Sensor 6 offset in °C
-float calibrationOffset7 = -0.13;  // Sensor 7 offset in °C
-float calibrationOffset8 = -0.51;  // Sensor 8 offset in °C
+float calibrationOffset1 = -0.05;  // Sensor 1 offset in °C
+float calibrationOffset2 = -0.01;  // Sensor 2 offset in °C
+float calibrationOffset3 = 0.30;  // Sensor 3 offset in °C
+float calibrationOffset4 = 0.06;  // Sensor 4 offset in °C
+float calibrationOffset5 = 0.09;  // Sensor 5 offset in °C
+float calibrationOffset6 = 0.01;  // Sensor 6 offset in °C
+float calibrationOffset7 = -0.07;  // Sensor 7 offset in °C
+float calibrationOffset8 = -0.40;  // Sensor 8 offset in °C
 
 // Create multiple MAX6675 objects
 MAX6675 thermocouple1(thermoCLK, thermoCS1, thermoDO);  // Sensor 1
